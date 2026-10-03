@@ -31,7 +31,7 @@ are not in here.
 | `addon/` | The Blender add-on: the CubeKit sidebar tab and the **L** key. `make_addon_zip.py` builds it. |
 | `dist/` | The add-on zip, ready to install. |
 | `examples/mug/` | The smallest complete model, used by the tutorial. |
-| `docs/` | [How it works](docs/HOW-IT-WORKS.md), [Tutorial](docs/TUTORIAL.md), [Buttons and keys](docs/HOTKEYS.md). |
+| `docs/` | [How it works](docs/HOW-IT-WORKS.md), [Tutorial](docs/TUTORIAL.md), [Buttons and keys](docs/HOTKEYS.md), [Roadmap](docs/ROADMAP.md). |
 | `archive/` | Earlier versions of files, kept for the record. |
 
 ## Install the add-on
