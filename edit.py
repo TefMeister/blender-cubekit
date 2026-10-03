@@ -419,13 +419,13 @@ def convert(ob, voxel_m):
     return s.write()
 
 
-def grow(ob, voxel_m, keys, count=1):
-    """E: for every selected face, put a cube outside it, in the face's colour; the new cube's outer
-    face becomes the selected one, so E E E builds a row. Returns the new selection keys."""
+def grow(ob, voxel_m, keys, count=1, colour=None):
+    """E: for every selected face, put count cubes outside it, in the face's colour (or colour); the
+    last new cube's outer face becomes the selected one, so E E E builds a row. Returns the new keys."""
     s = Solid(ob, voxel_m)
     new = []
     for cell, d in {k[:2] for k in keys}:
-        rgb = s.colour_of(cell, d)
+        rgb = colour or s.colour_of(cell, d)
         c = cell
         for _ in range(count):
             c = (c[0] + d[0], c[1] + d[1], c[2] + d[2])

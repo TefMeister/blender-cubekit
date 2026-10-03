@@ -1,8 +1,8 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.9.0) adds to Blender. The add-on puts a **CubeKit** tab in
-the 3D view's side panel: with the mouse over the 3D view, press **N** if the panel is hidden, then
-click **CubeKit** on the panel's right edge.
+Everything the CubeKit add-on (version 0.10.0) adds to Blender. The add-on puts two tabs in the 3D
+view's side panel, **CubeKit** and **CubeKit Build**: with the mouse over the 3D view, press **N** if
+the panel is hidden, then click a tab on the panel's right edge.
 
 Every change can be undone with **Ctrl + Z**.
 
@@ -60,9 +60,21 @@ Laid out like Microsoft Paint's palette: two rows of Paint's colours, then your 
 
 The palette and the number keys are saved with the file.
 
-### The reminder lines
+### Keys
 
-The bottom of the tab repeats the main keys, so they are always in view.
+The bottom of the tab lists every key in folding sections: **Moving around**, **Picking**,
+**Building**, **Painting**, and **Blender's own keys, moved**. Click a section's name to open it.
+
+## The CubeKit Build tab
+
+For adding or removing more than one cube at a time, by number.
+
+1. **Tab**, set **F** to sides, and pick one or more sides.
+2. Type **how many cubes**.
+3. Choose the **colour of added cubes**: **Same as the side**, or **Chosen colour** (pick it in the
+   colour box, or press **Take the palette's colour** to use the big square from the CubeKit tab).
+4. Press **Add on top** (that many cubes stacked outwards on every picked side) or **Remove inwards**
+   (that many dug inwards). With whole cubes picked, Remove takes the picked cubes away.
 
 ## Keys
 
@@ -70,7 +82,6 @@ The bottom of the tab repeats the main keys, so they are always in view.
 
 | Key | What it does |
 | --- | --- |
-| **L** (mouse over a cube) | Picks exactly that cube: selects the part, goes into edit mode and picks the one cube under the mouse. |
 | **Tab** | Into cube editing with **nothing picked**, so the cubes show and can be picked. **Tab** again comes out. |
 
 ### Edit mode (after Tab)
