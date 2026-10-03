@@ -38,7 +38,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 6, 0),
+    "version": (0, 6, 2),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -55,6 +55,11 @@ for _p in (_HERE, os.path.abspath(os.path.join(_HERE, "..", ".."))):
 
 from . import navigate  # noqa: E402  W A S D movement, the hover circle, Ctrl + wheel
 from . import palette   # noqa: E402  the Paint-style colours and the 1-0 keys
+import importlib as _il  # noqa: E402
+# An update installed over a running copy re-runs this file but not the files beside it, so they
+# are reloaded here; otherwise the old palette or movement code keeps running (seen 2026-10-03).
+navigate = _il.reload(navigate)
+palette = _il.reload(palette)
 
 
 def _kit():

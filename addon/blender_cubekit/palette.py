@@ -1,11 +1,14 @@
 # The colour palette, laid out like Microsoft Paint's (asked for by Tefa, 2026-10-03):
 #   - a grid of colour squares: click one and the picked sides (or whole cubes) take it at once
-#   - two rows of Paint's own colours, and a row of 10 of your own
+#   - two rows of Paint's own colours, then your own colours underneath: every Add to my colours
+#     puts a new square at the end, so the palette grows downwards (Tefa, 2026-10-03)
+#   - the big square at the top is the colour in hand: clicking a colour puts it there, and you can
+#     fine-tune it there before adding it
 #   - keys 1 to 0 on the main keyboard (not the numpad):
 #       hover a colour square and press a number   -> that number now means that colour
 #       hover a cube in edit mode and press it      -> paints the side under the mouse with it,
 #                                                      or the whole cube when F is on whole cubes
-#   - Ctrl + click on one of your own colours empties that square
+#   - Ctrl + click on one of your own colours takes that square away
 # The number a colour carries is drawn in the corner of its square.
 import bpy
 import bpy.utils.previews
@@ -18,8 +21,7 @@ PAINT_COLOURS = [
     (239, 228, 176), (181, 230, 29), (153, 217, 234), (112, 146, 190), (200, 191, 231),
 ]
 COLUMNS = 10
-OWN = 10                          # the third row: your own colours
-SLOTS = len(PAINT_COLOURS) + OWN
+PRESETS = len(PAINT_COLOURS)      # your own colours start after these
 NUMBER_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'ZERO']
 ICON_PX = 32
 SWATCH_SCALE = 1.5               # how tall the colour squares are drawn
@@ -42,26 +44,43 @@ class CubeKitColour(bpy.types.PropertyGroup):
     used: bpy.props.BoolProperty(default=True)
 
 
+def _is_paint_layout(pal):
+    return len(pal) >= PRESETS and all(
+        abs(pal[i].color[j] - PAINT_COLOURS[i][j] / 255) < 1e-3 for i in range(PRESETS) for j in range(3))
+
+
 def ensure(scene):
-    """Give the scene the Paint layout: 20 Paint colours, then 10 own slots. Colours from an older
-    palette move into the own slots, so nothing is lost."""
+    """Give the scene the Paint layout: Paint's 20 colours, then your own. Colours from an older
+    palette become your own, so nothing is lost. Empty squares from 0.6.0 are dropped."""
     pal = scene.cubekit_palette
-    if len(pal) == SLOTS and all(abs(pal[i].color[0] - PAINT_COLOURS[i][0] / 255) < 1e-3 for i in range(3)):
+    if _is_paint_layout(pal):
+        for i in reversed(range(PRESETS, len(pal))):
+            if not pal[i].used:
+                _remove(scene, i)
         return
-    old = [tuple(p.color) for p in pal]
+    old = [tuple(p.color) for p in pal if p.used]
     pal.clear()
     for rgb in PAINT_COLOURS:
         pal.add().color = tuple(c / 255 for c in rgb)
-    for i in range(OWN):
-        item = pal.add()
-        if i < len(old):
-            item.color = old[i]
-        else:
-            item.used = False
+    for rgb in old:
+        pal.add().color = rgb
     hk = scene.cubekit_hotkeys
     if all(h < 0 for h in hk):
         for i in range(10):               # 1 to 0 start as Paint's top row
             hk[i] = i
+
+
+def _remove(scene, index):
+    """Take one of your own squares away; number keys pointing past it move down with it."""
+    scene.cubekit_palette.remove(index)
+    hk = scene.cubekit_hotkeys
+    for i in range(10):
+        if hk[i] == index:
+            hk[i] = -1
+        elif hk[i] > index:
+            hk[i] -= 1
+    if scene.cubekit_active >= len(scene.cubekit_palette):
+        scene.cubekit_active = 0
 
 
 def _number_of(scene, index):
@@ -108,7 +127,7 @@ def _icon(rgb, used, number, active):
 
 def draw(layout, context):
     scene = context.scene
-    if len(scene.cubekit_palette) != SLOTS:
+    if not _is_paint_layout(scene.cubekit_palette):
         layout.operator("cubekit.palette_setup", icon='COLOR')
         return
     pal = scene.cubekit_palette
@@ -116,7 +135,7 @@ def draw(layout, context):
     top = layout.row()
     big = top.column()
     big.scale_y = 2.0
-    big.prop(pal[active], "color", text="")
+    big.prop(scene, "cubekit_mix", text="")
     tips = top.column(align=True)
     tips.label(text="click a colour = paint")
     tips.label(text="hover + 1-0 = give it a key")
@@ -127,9 +146,7 @@ def draw(layout, context):
         icon = _icon(tuple(item.color), item.used, _number_of(scene, i), i == active)
         op = cell.operator("cubekit.apply_colour", text="", icon_value=icon, emboss=False)
         op.index = i
-    row = layout.row(align=True)
-    row.prop(scene, "cubekit_mix", text="")
-    row.operator("cubekit.palette_add", text="Add to my colours", icon='ADD')
+    layout.operator("cubekit.palette_add", text="Add to my colours", icon='ADD')
 
 
 # ---- operators ----
@@ -150,10 +167,10 @@ class CUBEKIT_OT_apply_colour(bpy.types.Operator):
     @classmethod
     def description(cls, context, props):
         n = _number_of(context.scene, props.index)
-        own = props.index >= len(PAINT_COLOURS)
+        own = props.index >= PRESETS
         return ("Click: paint the picked sides (or cubes) with this colour"
                 + ("; key %s" % n if n else "") + ". Hover and press 1-0 to give it a key"
-                + (". Ctrl + click: empty this square" if own else ""))
+                + (". Ctrl + click: take this square away" if own else ""))
 
     def invoke(self, context, event):
         scene = context.scene
@@ -161,38 +178,30 @@ class CUBEKIT_OT_apply_colour(bpy.types.Operator):
         if not (0 <= self.index < len(pal)):
             return {'CANCELLED'}
         item = pal[self.index]
-        own = self.index >= len(PAINT_COLOURS)
-        if own and event.ctrl:
-            item.used = False
-            for i, h in enumerate(scene.cubekit_hotkeys):
-                if h == self.index:
-                    scene.cubekit_hotkeys[i] = -1
+        if self.index >= PRESETS and event.ctrl:
+            _remove(scene, self.index)
             return {'FINISHED'}
-        if not item.used:                       # an empty own square: fill it from the mixer
-            item.color = scene.cubekit_mix
-            item.used = True
         scene.cubekit_active = self.index
+        scene.cubekit_mix = item.color          # the colour in hand, ready to fine-tune and add
         if context.mode == 'EDIT_MESH':
             _paint(context, tuple(item.color))
         return {'FINISHED'}
 
 
 class CUBEKIT_OT_palette_add(bpy.types.Operator):
-    """Put the mixer colour into the first empty square of your own row"""
+    """Add the colour in the big square as a new square at the end of your colours"""
     bl_idname = "cubekit.palette_add"
     bl_label = "Add to my colours"
 
     def execute(self, context):
         scene = context.scene
-        for i in range(len(PAINT_COLOURS), SLOTS):
-            item = scene.cubekit_palette[i]
-            if not item.used:
-                item.color = scene.cubekit_mix
-                item.used = True
-                scene.cubekit_active = i
-                return {'FINISHED'}
-        self.report({'WARNING'}, "your row is full: Ctrl + click a square to empty it")
-        return {'CANCELLED'}
+        ensure(scene)
+        item = scene.cubekit_palette.add()
+        item.color = scene.cubekit_mix
+        scene.cubekit_active = len(scene.cubekit_palette) - 1
+        for area in context.screen.areas:
+            area.tag_redraw()
+        return {'FINISHED'}
 
 
 class CUBEKIT_OT_palette_setup(bpy.types.Operator):
@@ -297,10 +306,10 @@ def register():
         bpy.utils.register_class(c)
     bpy.types.Scene.cubekit_palette = bpy.props.CollectionProperty(type=CubeKitColour)
     bpy.types.Scene.cubekit_hotkeys = bpy.props.IntVectorProperty(size=10, default=[-1] * 10)
-    bpy.types.Scene.cubekit_active = bpy.props.IntProperty(default=0, min=0, max=SLOTS - 1)
+    bpy.types.Scene.cubekit_active = bpy.props.IntProperty(default=0, min=0)
     bpy.types.Scene.cubekit_mix = bpy.props.FloatVectorProperty(
         name="mixer", subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.5, 0.5, 0.5),
-        description="Mix a colour here, then Add to my colours (or click an empty square of your row)")
+        description="The colour in hand: click a colour to put it here, fine-tune it, then Add to my colours")
     _icons["coll"] = bpy.utils.previews.new()
     try:
         ensure(bpy.context.scene)
