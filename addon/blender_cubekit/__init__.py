@@ -31,7 +31,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 3, 0),
+    "version": (0, 3, 1),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -305,6 +305,24 @@ class CUBEKIT_OT_toggle_whole(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class CUBEKIT_OT_tab(bpy.types.Operator):
+    """Tab: into cube editing with nothing picked, faces mode, cubes visible; Tab again: out"""
+    bl_idname = "cubekit.tab"
+    bl_label = "Edit cubes"
+
+    def execute(self, context):
+        if context.mode == 'EDIT_MESH':
+            bpy.ops.object.mode_set(mode='OBJECT')
+            return {'FINISHED'}
+        ob = context.active_object
+        if not ob or ob.type != 'MESH':
+            return bpy.ops.object.editmode_toggle()
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_mode(type='FACE')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        return {'FINISHED'}
+
+
 class CUBEKIT_OT_view_all(bpy.types.Operator):
     """R: the whole model in view"""
     bl_idname = "cubekit.view_all"
@@ -502,10 +520,12 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 # ---------------------------------------------------------------- register
 
 CLASSES = (CubeKitColour, CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
-           CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_view_all,
+           CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
            CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_apply_colour, CUBEKIT_OT_palette_add,
            CUBEKIT_OT_palette_remove, CUBEKIT_PT_panel)
 _keys = []
+_walk_moved = []          # (keymap item, old key) for the walk mode's Tab, put back on unregister
+GRAVITY_KEY = 'F12'       # where walk mode's "falling" switch goes: a key nobody presses while walking
 
 
 def _bind(kc, keymap, idname, key, shift=False, **props):
@@ -533,6 +553,8 @@ def register():
     kc = bpy.context.window_manager.keyconfigs.addon
     if kc:
         _bind(kc, "Object Mode", "cubekit.pick_cube", 'L')
+        _bind(kc, "Object Mode", "cubekit.tab", 'TAB')
+        _bind(kc, "Mesh", "cubekit.tab", 'TAB')
         _bind(kc, "Mesh", "cubekit.brush", 'LEFTMOUSE', mode='ADD')
         _bind(kc, "Mesh", "cubekit.brush", 'RIGHTMOUSE', mode='SUB')
         _bind(kc, "Mesh", "cubekit.toggle_whole", 'F')
@@ -545,6 +567,17 @@ def register():
         _seed_palette(bpy.context.scene)
     except Exception:
         pass
+    # Walk mode (Blender's own, Shift+`): Tab switches falling on. An add-on cannot add to that
+    # keymap, so the user's own Tab item is moved to GRAVITY_KEY, and falling starts off.
+    try:
+        bpy.context.preferences.inputs.walk_navigation.use_gravity = False
+        wk = bpy.context.window_manager.keyconfigs.user.keymaps.get("View3D Walk Modal")
+        for kmi in wk.keymap_items:
+            if kmi.propvalue == 'GRAVITY_TOGGLE' and kmi.type == 'TAB':
+                _walk_moved.append((kmi, kmi.type))
+                kmi.type = GRAVITY_KEY
+    except Exception as e:
+        print("CubeKit: could not move walk mode's Tab:", e)
 
 
 def unregister():
@@ -554,6 +587,12 @@ def unregister():
         except Exception:
             pass
     _keys.clear()
+    for kmi, old in _walk_moved:
+        try:
+            kmi.type = old
+        except Exception:
+            pass
+    _walk_moved.clear()
     del bpy.types.WindowManager.cubekit_whole
     del bpy.types.WindowManager.cubekit_brush
     del bpy.types.Scene.cubekit_palette

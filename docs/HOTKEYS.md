@@ -24,6 +24,9 @@ Object mode (before Tab):
 | Key | What it does |
 | --- | --- |
 | **L** (mouse over a cube) | Picks exactly that cube: selects the object, enters edit mode, selects the one cube under the mouse. |
+| **Tab** | Into cube editing with **nothing picked**, so the cubes show and can be picked. Tab again comes out. |
+
+Blender's walk mode (Shift + the key left of 1) normally turns on falling with **Tab**. The add-on moves that to **F12**, and walking starts with falling off.
 
 Edit mode (after Tab), asked for on 2026-10-03:
 
