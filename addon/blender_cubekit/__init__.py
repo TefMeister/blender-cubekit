@@ -39,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 12, 1),
+    "version": (0, 12, 2),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -132,6 +132,9 @@ class CUBEKIT_OT_colours_on(bpy.types.Operator):
             sp.shading.type = 'SOLID'
             sp.shading.color_type = 'VERTEX' if painted else 'TEXTURE'
             sp.shading.light = 'FLAT'
+            # a model is solid inside but only its skin is drawn; from inside the skin, walls seen
+            # from behind are hidden and cannot be picked (Tefa, 2026-10-03: flying inside was confusing)
+            sp.shading.show_backface_culling = True
         return {'FINISHED'}
 
 
@@ -436,6 +439,8 @@ class CUBEKIT_OT_tab(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type='FACE')
         bpy.ops.mesh.select_all(action='DESELECT')
+        for sp in _view3d_spaces(context):
+            sp.shading.show_backface_culling = True          # see CUBEKIT_OT_colours_on
         try:
             bpy.ops.cubekit.hover('INVOKE_DEFAULT')
         except Exception:
