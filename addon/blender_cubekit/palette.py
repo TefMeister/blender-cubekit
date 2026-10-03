@@ -139,13 +139,22 @@ def draw(layout, context):
     tips = top.column(align=True)
     tips.label(text="click a colour = paint")
     tips.label(text="hover + 1-0 = give it a key")
-    grid = layout.grid_flow(row_major=True, columns=COLUMNS, even_columns=True, even_rows=True, align=True)
-    for i, item in enumerate(pal):
-        cell = grid.column(align=True)
-        cell.scale_y = SWATCH_SCALE
-        icon = _icon(tuple(item.color), item.used, _number_of(scene, i), i == active)
-        op = cell.operator("cubekit.apply_colour", text="", icon_value=icon, emboss=False)
-        op.index = i
+    # Fixed rows of COLUMNS, filled left to right, the last row padded with blanks: a new colour
+    # lands in the next box and nothing else moves. (A grid_flow re-balanced its columns whenever
+    # the count changed, so the whole palette jumped - Tefa, 2026-10-03.)
+    grid = layout.column(align=True)
+    for start in range(0, len(pal), COLUMNS):
+        row = grid.row(align=True)
+        row.scale_y = SWATCH_SCALE
+        for i in range(start, start + COLUMNS):
+            cell = row.column(align=True)
+            if i < len(pal):
+                item = pal[i]
+                icon = _icon(tuple(item.color), item.used, _number_of(scene, i), i == active)
+                op = cell.operator("cubekit.apply_colour", text="", icon_value=icon, emboss=False)
+                op.index = i
+            else:
+                cell.label(text="")
     layout.operator("cubekit.palette_add", text="Add to my colours", icon='ADD')
 
 
