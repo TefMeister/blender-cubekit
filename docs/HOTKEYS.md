@@ -1,6 +1,6 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.11.0) adds to Blender. The add-on puts three tabs in the 3D
+Everything the CubeKit add-on (version 0.12.0) adds to Blender. The add-on puts three tabs in the 3D
 view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
@@ -75,6 +75,12 @@ For adding or removing more than one cube at a time, by number.
    colour box, or press **Take the palette's colour** to use the big square from the CubeKit tab).
 4. Press **Add on top** (that many cubes stacked outwards on every picked side) or **Remove inwards**
    (that many dug inwards). With whole cubes picked, Remove takes the picked cubes away.
+   Remove stops at the first gap: typing a big number clears a row and nothing past the gap.
+
+**Count between.** Pick two sides (or two cubes) and press **Count between**: the tab shows how many
+cubes lie between them, how many of those are solid and how many empty, and the distance in mm. When
+the two are not in a straight line it says how far apart they are each way (left-right, front-back,
+up-down).
 
 ## Keys
 
