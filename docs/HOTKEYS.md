@@ -16,12 +16,24 @@ The tab also shows the project's cube size, read from `cube_size.py`.
 
 ## Keys the add-on adds
 
-| Key | Where | What it does |
-| --- | --- | --- |
-| **L** | mouse over a cube, object mode | Picks exactly that cube: selects the object, enters edit mode, selects the one cube under the mouse. |
+Object mode (before Tab):
 
-In edit mode **L** is Blender's own "select linked under the mouse", which on a cut-up model is also
-exactly one cube. So the rule is the same in both modes: **hover a cube, press L**.
+| Key | What it does |
+| --- | --- |
+| **L** (mouse over a cube) | Picks exactly that cube: selects the object, enters edit mode, selects the one cube under the mouse. |
+
+Edit mode (after Tab), set up the way a game is played (asked for 2026-10-03):
+
+| Key | What it does |
+| --- | --- |
+| **Left mouse** | Picks the cube under the mouse. One click = that cube only; **Shift** + click adds a cube. |
+| **Right mouse** | Paint-select on or off. With it on, hold the left mouse and sweep over cubes to add them all. The CubeKit tab shows which is on. |
+| **Space** | Walk around the model: **W A S D** move, the mouse looks, **Q** lowers you, **E** raises you, **Shift** goes faster. **Space** again (or Esc) stops. |
+| **F5** | What the left mouse did before: Blender's plain click-select of a face, edge or vertex. |
+| **F6** | What the right mouse did before: the edit-mesh menu. |
+
+In edit mode **L** still works too: it is Blender's own "select linked under the mouse", which on a
+cut-up model is exactly one cube.
 
 ## Blender keys worth knowing
 
