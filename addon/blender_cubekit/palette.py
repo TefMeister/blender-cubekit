@@ -148,7 +148,7 @@ def draw(layout, context):
     big.prop(scene, "cubekit_mix", text="")
     tips = top.column(align=True)
     tips.label(text="click a colour = paint")
-    tips.label(text="hover + 1-0 = give it a key")
+    tips.label(text="click it, then 1-0 = give it a key")
     # Fixed rows of COLUMNS, filled left to right, the last row padded with blanks: a new colour
     # lands in the next box and nothing else moves. (A grid_flow re-balanced its columns whenever
     # the count changed, so the whole palette jumped - Tefa, 2026-10-03.)
@@ -237,20 +237,30 @@ class CUBEKIT_OT_palette_setup(bpy.types.Operator):
 
 
 class CUBEKIT_OT_set_hotkey(bpy.types.Operator):
-    """Over a colour square: give that colour this number key"""
+    """In the side panel: give a colour this number key - the square under the mouse when Blender
+says which it is, otherwise the last clicked square (orange outline)"""
     bl_idname = "cubekit.set_hotkey"
     bl_label = "Give a colour a number key"
 
     slot: bpy.props.IntProperty()
 
     def invoke(self, context, event):
-        op = getattr(context, "button_operator", None)
-        index = None
-        if op is not None and op.bl_rna.identifier == "CUBEKIT_OT_apply_colour":
-            index = op.index
-        if index is None:
+        # Only in the side panel; in the 3D view itself the number paints instead (paint_hover).
+        region = context.region
+        if region is None or region.type != 'UI':
             return {'PASS_THROUGH'}
         scene = context.scene
+        index = None
+        op = getattr(context, "button_operator", None)
+        try:
+            if op is not None and op.bl_rna.identifier == "CUBEKIT_OT_apply_colour":
+                index = op.index
+        except Exception:
+            index = None
+        if index is None:                          # Blender did not say: the last clicked square
+            index = scene.cubekit_active
+        if not (0 <= index < len(scene.cubekit_palette)):
+            return {'CANCELLED'}
         if not scene.cubekit_palette[index].used:
             return {'CANCELLED'}
         for i, h in enumerate(scene.cubekit_hotkeys):     # one number per colour
@@ -353,8 +363,10 @@ CLASSES = (CubeKitColour, CUBEKIT_OT_apply_colour, CUBEKIT_OT_palette_add, CUBEK
 
 
 def bind(kc, keys):
+    # The side panel hears keys through "3D View Generic"; "User Interface" is kept as well.
     for i, key in enumerate(NUMBER_KEYS):
-        for kmname, idname, space in (("User Interface", "cubekit.set_hotkey", 'EMPTY'),
+        for kmname, idname, space in (("3D View Generic", "cubekit.set_hotkey", 'VIEW_3D'),
+                                      ("User Interface", "cubekit.set_hotkey", 'EMPTY'),
                                       ("Mesh", "cubekit.paint_hover", 'EMPTY')):
             km = kc.keymaps.new(name=kmname, space_type=space)
             kmi = km.keymap_items.new(idname, type=key, value='PRESS')
