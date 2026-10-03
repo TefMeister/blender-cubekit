@@ -1,6 +1,6 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.12.2) adds to Blender. The add-on puts three tabs in the 3D
+Everything the CubeKit add-on (version 0.13.0) adds to Blender. The add-on puts three tabs in the 3D
 view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
@@ -76,6 +76,21 @@ For adding or removing more than one cube at a time, by number.
 4. Press **Add on top** (that many cubes stacked outwards on every picked side) or **Remove inwards**
    (that many dug inwards). With whole cubes picked, Remove takes the picked cubes away.
    Remove stops at the first gap: typing a big number clears a row and nothing past the gap.
+
+**Move picked cubes.** Pick cubes (or sides: a picked side counts as its cube) and press **Alt + an
+arrow key**: they move one whole cube, colours and all, left, right, away or towards you as you see it
+on screen; **Alt + Page Up / Page Down** move them up and down. The **arrow buttons** in the Build tab do
+the same. Where they land, they replace what was there; the spots they leave become empty. They stay
+picked, so pressing again keeps moving them. This changes the model's shape for good, in every frame.
+
+**Make a moving part.** For things that must move per frame, like fingers. Pick the cubes of, say,
+a finger, type a **name** (for example `index_finger`) and press **Make a moving part**. Those cubes are
+lifted out into a part of their own. It turns at the point where it touched the rest (the knuckle) and
+follows the object it came from, so it moves with the hand. To pose it: **Tab** out of editing,
+**left-click** the part, **R** to turn it (R then X, Y or Z to turn about one direction only), **G** to
+slide it, and **I** to keep that pose on the current frame. For more joints, split again: Tab into the
+finger, pick its tip, and make that a part too; the tip then bends on its own and also follows the
+finger. A part is still made of cubes: Tab into it to paint, add or remove as usual.
 
 **Count between.** Pick two sides (or two cubes) and press **Count between**: the tab shows how many
 cubes lie between them, how many of those are solid and how many empty, and the distance in mm. When

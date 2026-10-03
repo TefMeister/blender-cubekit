@@ -52,6 +52,8 @@ the full repo is only needed to build models.
   **Q** digs one out, **C** splits a side into 4 and then 16 squares for cracks, wear and fine lines,
   **Shift + C** joins it back, **R** puts the whole model in view. The **CubeKit Build** tab adds or
   removes a typed number of cubes, in the side's colour or a chosen one.
+  **Alt + arrows** move picked cubes; **Make a moving part** turns picked cubes (a finger) into a part
+  that bends at its knuckle and is posed frame by frame.
 - **Painting:** in the **CubeKit** tab's **colours** box, click a colour square to paint what is
   picked, or hover a cube and press **1** to **0**. Colours can be added, changed and removed.
 - **Cube size:** buttons at the top of the tab make this file's cubes finer (each cube into 8) or
