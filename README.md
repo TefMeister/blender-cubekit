@@ -25,6 +25,7 @@ are not in here.
 | `cubes.py` | Small shape helpers with no Blender in them (ragged edges and the like). |
 | `atlas.py` | Merges neighbouring faces of one colour and writes every colour into one texture. |
 | `bl.py` | The Blender side: objects, the unlit scene, stop-motion keys, rendering, and **pick mode** (every cube on its own). |
+| `edit.py` | Cube editing on an editing copy: add, remove, recolour; works out which cubes are solid inside. |
 | `pick_mode.py` | Makes a `<model>_pick.blend` copy of any cube model where single cubes can be picked. |
 | `gz_world.py` | Exporter for GZDoom: several cube models into one `.pk3`, the atlas as the skin. |
 | `addon/` | The Blender add-on: the CubeKit sidebar tab and the **L** key. `make_addon_zip.py` builds it. |
@@ -46,11 +47,10 @@ the full repo is only needed to build models.
 ## The keys
 
 - **Hover a cube, press L**: picks exactly that cube (from object mode it enters edit mode for you).
-- In edit mode it works like a game: **left mouse** picks a cube, **right mouse** switches
-  paint-select on and off (hold the left mouse and sweep to pick many), **Space** walks you around
-  the model with **W A S D**, the mouse, **Q** and **E**. The old mouse jobs are on **F5** and **F6**.
+- In edit mode: **left mouse** is a picking brush (the **wheel** sizes it), **right mouse** held
+  un-picks, **F** switches between sides and whole cubes, **E** adds a cube, **Q** removes one,
+  **R** puts the whole model in view. A colour palette in the CubeKit tab paints what is picked.
 - **Tab**: back out.
-- **Colours on** button: flat, unlit, textured, which is what the game shows.
 
 Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
 
@@ -69,8 +69,9 @@ Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
 ## Where it stands
 
 - 2026-10-03: repo made from the shared kit folder. Pick mode and the add-on are new and have been
-  used on one animated weapon with hands. Add-on 0.2.0 added the game-style edit-mode keys (left
-  mouse picks, right mouse toggles paint-select, Space walks). The exporter covers GZDoom only.
+  used on one animated weapon with hands. Add-on 0.3.0 adds cube editing: the picking brush,
+  adding and removing cubes, and a colour palette. Edits live in the editing copy; turning an
+  edited copy back into a game model is not built yet. The exporter covers GZDoom only.
 
 ## Credits
 
