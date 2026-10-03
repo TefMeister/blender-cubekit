@@ -46,6 +46,9 @@ the full repo is only needed to build models.
 ## The keys
 
 - **Hover a cube, press L**: picks exactly that cube (from object mode it enters edit mode for you).
+- In edit mode it works like a game: **left mouse** picks a cube, **right mouse** switches
+  paint-select on and off (hold the left mouse and sweep to pick many), **Space** walks you around
+  the model with **W A S D**, the mouse, **Q** and **E**. The old mouse jobs are on **F5** and **F6**.
 - **Tab**: back out.
 - **Colours on** button: flat, unlit, textured, which is what the game shows.
 
@@ -65,9 +68,9 @@ Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
 
 ## Where it stands
 
-- 2026-10-03: repo made from the shared kit folder. Pick mode and the add-on (three buttons, the
-  **L** key) are new and have been used on one animated weapon with hands. The exporter covers
-  GZDoom only.
+- 2026-10-03: repo made from the shared kit folder. Pick mode and the add-on are new and have been
+  used on one animated weapon with hands. Add-on 0.2.0 added the game-style edit-mode keys (left
+  mouse picks, right mouse toggles paint-select, Space walks). The exporter covers GZDoom only.
 
 ## Credits
 
