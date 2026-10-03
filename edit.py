@@ -239,8 +239,17 @@ class Solid:
         av.data.foreach_set("color", flat_v)
         me.color_attributes.active_color = av
         me.color_attributes.render_color_index = me.color_attributes.find(VIEW)
+        # Edit mode reads the selection from the corners, so corners, edges and faces are all set:
+        # only the given faces (none by default) come up picked.
         sel = set(select)
-        me.polygons.foreach_set("select", [k in sel for k in keys])
+        fsel = [k in sel for k in keys]
+        me.vertices.foreach_set("select", [False] * len(me.vertices))
+        me.edges.foreach_set("select", [False] * len(me.edges))
+        me.polygons.foreach_set("select", fsel)
+        for poly, on in zip(me.polygons, fsel):
+            if on:
+                for vi in poly.vertices:
+                    me.vertices[vi].select = True
         ob.data = me
         if old.users == 0:
             bpy.data.meshes.remove(old)
