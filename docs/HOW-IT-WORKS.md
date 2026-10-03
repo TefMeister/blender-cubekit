@@ -17,19 +17,18 @@ which is the point.
 - **Cubes have one colour each**, an sRGB triple, and belong to exactly one **part** (body, pump,
   trigger, hand). Each part becomes one Blender object, so the parts can move on their own.
 
-## 1b. Making a whole project finer
+## 1b. Finer cubes for one model
 
-A project keeps a small `cube_project.py` in a folder above its model folders. It holds the cube
-size the project started with (`CUBE_MM_START`) and how many times it has been made finer (`TIER`).
-Each step halves the cube, so 1 cube becomes 8, then 64. The build scripts keep drawing on the
-starting grid; editing copies are made finer to match the tier, each cube split into 8 in the same
-colours. Only finer is allowed: merging 8 cubes back into 1 would lose detail, and cubes bigger than
-the start would break the models built on it. The add-on's **Finer cubes** button changes the tier
-and converts the open models; others follow when they are next opened for editing. An example file:
+A project keeps a small `cube_project.py` in a folder above its model folders, holding the cube size
+the project started with (`CUBE_MM_START`). No model goes bigger than that. Each model file then
+chooses its own size with the add-on's cube size buttons: the start size, half, or quarter. Going
+finer splits every cube into 8 in the same colours; going back bigger turns every 8 into one, keeping
+a big cube where at least half its small cubes are. The build scripts keep drawing on the start grid;
+only editing copies change size. Mixing sizes inside one model is not possible yet: a model has one
+grid.
 
 ```
 CUBE_MM_START = 3.4
-TIER = 1        # 1.7 mm cubes
 ```
 
 ## 2. Where the numbers live

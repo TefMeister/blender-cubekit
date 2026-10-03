@@ -17,13 +17,13 @@ the sidebar if it is hidden).
 
 The tab also shows the project's cube size.
 
-**Finer cubes, whole project (1 = 8).** When a project needs finer detail, this button halves the
-cube size for the whole project: every cube becomes 8 cubes of half the size, in the same place and
-colours, and detail painted on split sides lands on the new smaller sides. It asks before it acts.
-It can only go finer, never bigger than the size the project started with: bigger cubes would break
-every model built on the starting grid. The models open now change straight away; the project's other
-models change the next time they are opened for editing (Tab or Every cube on its own). The size is
-kept in the project's `cube_project.py` (see [How it works](HOW-IT-WORKS.md)).
+**Cube size, this file only.** A row of buttons: the project's starting size, half, and quarter
+(3.4, 1.7 and 0.85 mm for Ashes). The lit button is this file's size. Clicking a smaller one makes
+every cube 8 cubes of half the size, in the same place and colours, with split-side detail landing
+on the new smaller sides. Clicking a bigger one turns every 8 back into one: a big cube comes back
+where at least half of its small cubes are, so a single dug-out small cube is filled in, while a
+mostly dug-out block disappears; fine colour detail is kept as far as the bigger sides can hold it.
+It asks before it acts, changes only the open file, and never goes bigger than the starting size.
 
 ## Painting cubes with the palette
 
