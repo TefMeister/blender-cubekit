@@ -39,8 +39,11 @@ that colour at once. **F** decides whether a side or the whole cube is painted.
 
 **Your own colours.** The big square at the top is the colour in hand: clicking any colour puts it
 there, and clicking the big square lets you fine-tune it. **Add to my colours** puts it in a new square
-under the grid, so the palette grows downwards as you add. **Ctrl + click** one of your own squares to
-take it away. The palette and the number keys are saved with the file. Ctrl+Z undoes a paint.
+under the grid, so the palette grows downwards as you add.
+
+**Changing or removing a colour.** Click the square (it gets an orange outline). To change it,
+fine-tune the big square and press **Change this colour**. To remove it, press **Remove this colour**
+(or **Ctrl + click** the square). This works on every square, Paint's colours too. The palette and the number keys are saved with the file. Ctrl+Z undoes a paint.
 
 ## Keys the add-on adds
 
