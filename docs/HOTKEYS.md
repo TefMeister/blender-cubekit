@@ -31,8 +31,9 @@ that colour at once. **F** decides whether a side or the whole cube is painted.
 
 **Number keys 1 to 0** (the row above the letters, not the numpad):
 
-- **Hover a colour square and press a number**: that number now means that colour. The number is
-  drawn in the square's corner. 1 to 0 start as Paint's top row.
+- **Click a colour square, then press a number** (mouse still over the side panel): that number now
+  means that colour. The number is drawn in the square's corner. 1 to 0 start as Paint's top row.
+  (Hovering a square and pressing the number also works where Blender reports the hovered square.)
 - **Hover a cube in edit mode and press a number**: paints the side under the mouse with that
   colour, or the whole cube when **F** is on whole cubes. Nothing needs to be picked first, and
   what is picked stays picked.
