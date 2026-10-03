@@ -16,6 +16,8 @@ import bpy
 from mathutils import Quaternion, Vector
 
 MOVE_SPEED = 0.30          # metres per second; a hand-held model is under a metre long. Approved by Tefa 2026-10-03
+LIFT_SPEED = 0.30          # Z / X, metres per second. Both are only the starting values: the CubeKit
+                           # Move tab changes them, kept in Blender's preferences (Tefa, 2026-10-03)
 FAST = 3.0                 # Shift multiplies the speed by this
 TICK = 1 / 60              # how often the view is moved, seconds
 LOOK_DEG_PER_PX = 0.25     # middle-mouse look: degrees turned per pixel of mouse movement
@@ -68,11 +70,12 @@ class CUBEKIT_OT_move(bpy.types.Operator):
             if k in MOVE_KEYS:
                 d += rv.view_rotation @ MOVE_KEYS[k]
         lift = sum(LIFT_KEYS.get(k, 0.0) for k in self.held)
-        d.z += lift
-        if d.length == 0:
-            return
-        speed = MOVE_SPEED * (FAST if self.fast else 1.0) * TICK
-        rv.view_location += d.normalized() * speed
+        p = prefs()
+        fast = p.fast if self.fast else 1.0
+        if d.length:
+            rv.view_location += d.normalized() * p.move_speed * fast * TICK
+        if lift:
+            rv.view_location.z += (1 if lift > 0 else -1) * p.lift_speed * fast * TICK
 
     def modal(self, context, event):
         if event.type == 'TIMER':
@@ -118,9 +121,10 @@ class CUBEKIT_OT_look(bpy.types.Operator):
             dx, dy = event.mouse_x - self.last[0], event.mouse_y - self.last[1]
             self.last = (event.mouse_x, event.mouse_y)
             eye = _eye(rv)
-            yaw = Quaternion((0, 0, 1), -math.radians(dx * LOOK_DEG_PER_PX))
+            look = prefs().look
+            yaw = Quaternion((0, 0, 1), -math.radians(dx * look))
             right = rv.view_rotation @ Vector((1, 0, 0))
-            pitch = Quaternion(right, math.radians(dy * LOOK_DEG_PER_PX))
+            pitch = Quaternion(right, math.radians(dy * look))
             new = yaw @ pitch @ rv.view_rotation
             # do not tip over the top: keep the view's up pointing upwards
             if (new @ Vector((0, 1, 0))).z > 0.02:
@@ -214,7 +218,77 @@ class CUBEKIT_OT_brush_size(bpy.types.Operator):
         return {'FINISHED'}
 
 
-CLASSES = (CUBEKIT_OT_move, CUBEKIT_OT_look, CUBEKIT_OT_hover, CUBEKIT_OT_brush_size)
+# ---- the speeds, in Blender's preferences so they are the same in every file ----
+
+_pkg = {"name": __package__}
+
+
+class _Defaults:
+    move_speed, lift_speed, fast, look = MOVE_SPEED, LIFT_SPEED, FAST, LOOK_DEG_PER_PX
+
+
+def prefs():
+    try:
+        return bpy.context.preferences.addons[_pkg["name"]].preferences
+    except (KeyError, AttributeError):
+        return _Defaults
+
+
+class CubeKitPrefs(bpy.types.AddonPreferences):
+    bl_idname = __package__
+
+    move_speed: bpy.props.FloatProperty(name="moving speed (W A S D)", default=MOVE_SPEED, min=0.01, max=10.0,
+                                        soft_max=3.0, unit='VELOCITY', description="How fast W A S D move you")
+    lift_speed: bpy.props.FloatProperty(name="up / down speed (X / Z)", default=LIFT_SPEED, min=0.01, max=10.0,
+                                        soft_max=3.0, unit='VELOCITY', description="How fast X raises and Z lowers you")
+    fast: bpy.props.FloatProperty(name="Shift makes it", default=FAST, min=1.0, max=20.0,
+                                  description="Holding Shift multiplies both speeds by this")
+    look: bpy.props.FloatProperty(name="look speed (middle mouse)", default=LOOK_DEG_PER_PX, min=0.02, max=2.0,
+                                  description="Degrees the view turns per pixel of mouse movement")
+
+    def draw(self, context):
+        _draw_speeds(self.layout, self)
+
+
+def _draw_speeds(lay, p):
+    col = lay.column(align=True)
+    col.prop(p, "move_speed")
+    col.prop(p, "lift_speed")
+    lay.prop(p, "fast", text="Shift makes it  x")
+    lay.prop(p, "look")
+    lay.operator("cubekit.speed_reset", icon='LOOP_BACK')
+
+
+class CUBEKIT_OT_speed_reset(bpy.types.Operator):
+    """Put every speed back to how it started"""
+    bl_idname = "cubekit.speed_reset"
+    bl_label = "Back to the starting speeds"
+
+    def execute(self, context):
+        p = prefs()
+        if p is _Defaults:
+            return {'CANCELLED'}
+        p.move_speed, p.lift_speed, p.fast, p.look = MOVE_SPEED, LIFT_SPEED, FAST, LOOK_DEG_PER_PX
+        return {'FINISHED'}
+
+
+class CUBEKIT_PT_move(bpy.types.Panel):
+    bl_label = "Moving speed"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "CubeKit Move"
+
+    def draw(self, context):
+        p = prefs()
+        if p is _Defaults:
+            self.layout.label(text="(speeds not found)", icon='ERROR')
+            return
+        self.layout.label(text="same in every file", icon='INFO')
+        _draw_speeds(self.layout, p)
+
+
+CLASSES = (CubeKitPrefs, CUBEKIT_OT_speed_reset, CUBEKIT_PT_move,
+           CUBEKIT_OT_move, CUBEKIT_OT_look, CUBEKIT_OT_hover, CUBEKIT_OT_brush_size)
 
 # What W A S D Z X and the middle mouse did before, moved to F-keys so nothing is lost.
 # (keymap, operator, key, extra properties)
