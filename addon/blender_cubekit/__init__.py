@@ -19,6 +19,8 @@
 #   E                        add a cube outside every picked side; E E E builds a row
 #   Q                        remove the cube behind every picked side (Q Q Q digs a row); with whole
 #                            cubes picked, removes those cubes
+#   C                        split the picked sides (or cubes' sides) into 4 smaller squares, to
+#                            pick and paint on their own: cracks, wear, fine lines
 #   R                        the whole model in view
 #   Ctrl + wheel             brush circle bigger / smaller (the circle follows the mouse)
 #   F5 / F6                  Blender's plain click-select / the edit-mesh menu (the old mouse jobs)
@@ -35,7 +37,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 4, 1),
+    "version": (0, 5, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -410,6 +412,25 @@ removes those cubes"""
         return {'FINISHED'}
 
 
+class CUBEKIT_OT_split(bpy.types.Operator):
+    """C: split the picked sides (or the outside sides of the picked cubes) into 4 smaller squares,
+to pick and paint on their own - cracks, wear and fine lines. The cube keeps its size"""
+    bl_idname = "cubekit.split"
+    bl_label = "Split into 4"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        whole = context.window_manager.cubekit_whole
+        n = _for_each_edited(context, lambda edit, ob, V, keys: edit.split(ob, V, keys, whole))
+        if not n:
+            self.report({'WARNING'}, "nothing picked, or not a cube-edit object (use Every cube on its own)")
+            return {'CANCELLED'}
+        if whole:
+            context.window_manager.cubekit_whole = False     # the squares are picked: paint them as sides
+        self.report({'INFO'}, "split into 4: pick a square and paint it")
+        return {'FINISHED'}
+
+
 # ---------------------------------------------------------------- the palette
 
 class CubeKitColour(bpy.types.PropertyGroup):
@@ -506,7 +527,8 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         box.label(text="picking", icon='RESTRICT_SELECT_OFF')
         row = box.row(align=True)
         row.prop(wm, "cubekit_whole", text="whole cubes (F)" if wm.cubekit_whole else "sides only (F)", toggle=True)
-        box.prop(wm, "cubekit_brush", text="brush size (wheel)")
+        box.prop(wm, "cubekit_brush", text="brush size (Ctrl + wheel)")
+        box.operator("cubekit.split", text="Split into 4 (C)", icon='MESH_GRID')
 
         box = lay.box()
         row = box.row(align=True)
@@ -526,6 +548,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         col.label(text="object mode: hover a cube, L = pick")
         col.label(text="edit mode: left = pick, right = un-pick")
         col.label(text="E add / Q remove / F sides / R view")
+        col.label(text="C = split into 4 smaller squares")
         col.label(text="Ctrl + wheel = brush size")
         col.label(text="WASD move, Z down, X up, middle mouse look")
         col.label(text="F5 / F6 = the old left / right mouse")
@@ -535,7 +558,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 
 CLASSES = (CubeKitColour, CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
            CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
-           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_apply_colour, CUBEKIT_OT_palette_add,
+           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_apply_colour, CUBEKIT_OT_palette_add,
            CUBEKIT_OT_palette_remove, CUBEKIT_PT_panel)
 _keys = []
 _walk_moved = []          # (keymap item, old key) for the walk mode's Tab, put back on unregister
@@ -577,6 +600,7 @@ def register():
         _bind(kc, "Mesh", "cubekit.grow", 'E')
         _bind(kc, "Mesh", "cubekit.shrink", 'Q')
         _bind(kc, "Mesh", "cubekit.view_all", 'R')
+        _bind(kc, "Mesh", "cubekit.split", 'C')
         _bind(kc, "Mesh", "view3d.select", 'F5')                                   # the old left mouse
         _bind(kc, "Mesh", "wm.call_menu", 'F6', name="VIEW3D_MT_edit_mesh_context_menu")   # the old right mouse
     try:

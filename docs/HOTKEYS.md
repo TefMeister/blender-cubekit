@@ -78,6 +78,7 @@ Edit mode (after Tab), asked for on 2026-10-03:
 | **E** | Adds a cube outside every picked side, in that side's colour. The new cube's outer side becomes the picked one, so **E E E** builds a row of three. Needs sides picked, so it knows which way. |
 | **Q** | Removes the cube behind every picked side; the next cube inward becomes picked, so **Q Q** digs two deep. With whole cubes picked, removes those cubes. |
 | **R** | The whole model in view, at a sensible distance. |
+| **C** | Split: every picked side becomes four smaller squares that can be picked and painted on their own, for cracks, wear and fine lines. With whole cubes picked, every outside side of those cubes is split. The cube keeps its size, so the one-cube-size rule still holds. Also a button in the CubeKit tab. |
 | **Ctrl + wheel** | Brush circle bigger or smaller. The circle follows the mouse in edit mode, so its size is always visible. |
 | **F5** | What the left mouse did before: Blender's plain click-select. |
 | **F6** | What the right mouse did before: the edit-mesh menu. |
