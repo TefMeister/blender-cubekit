@@ -38,8 +38,8 @@ the whole model.
 
 ## Step 3: pick a cube
 
-Click **Every cube on its own**, then hover the mouse over any cube and press **L**. One cube turns
-orange: that is the picked cube. In edit mode the **left mouse** picks more (hold and sweep), the
+Click **Every cube on its own**, press **Tab**, and click any cube with the **left mouse**. It turns
+orange: that is the picked cube. The **left mouse** picks more (hold and sweep), the
 **right mouse** held un-picks, **Ctrl + wheel** sizes the brush, **Alt + A** un-picks everything and
 **F** switches between whole cubes and single sides. **Tab** leaves edit mode. Click **Save pick copy** if you want to keep
 this cut-up version to come back to; it is saved as `mug_pick.blend`, the original stays as built.

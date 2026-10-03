@@ -39,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 9, 0),
+    "version": (0, 10, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -56,11 +56,13 @@ for _p in (_HERE, os.path.abspath(os.path.join(_HERE, "..", ".."))):
 
 from . import navigate  # noqa: E402  W A S D movement, the hover circle, Ctrl + wheel
 from . import palette   # noqa: E402  the Paint-style colours and the 1-0 keys
+from . import panels    # noqa: E402  the key help sections and the CubeKit Build tab
 import importlib as _il  # noqa: E402
 # An update installed over a running copy re-runs this file but not the files beside it, so they
 # are reloaded here; otherwise the old palette or movement code keeps running (seen 2026-10-03).
 navigate = _il.reload(navigate)
 palette = _il.reload(palette)
+panels = _il.reload(panels)
 
 
 from . import project   # noqa: E402  the project's cube size and tier
@@ -587,6 +589,7 @@ fine detail is kept as far as the bigger cube's sides can hold it. Other files a
 
 class CUBEKIT_PT_panel(bpy.types.Panel):
     bl_label = "CubeKit"
+    bl_order = 0
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "CubeKit"
@@ -623,15 +626,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         box.label(text="colours", icon='COLOR')
         palette.draw(box, context)
 
-        col = lay.column(align=True)
-        col.label(text="object mode: hover a cube, L = pick")
-        col.label(text="edit mode: left = pick, right = un-pick")
-        col.label(text="E add / Q remove / F sides / R view")
-        col.label(text="C = split 4 / 16, Shift + C = join")
-        col.label(text="Ctrl + wheel = brush size")
-        col.label(text="WASD move, Z down, X up, middle mouse look")
-        col.label(text="1-0 over a cube = paint it that key's colour")
-        col.label(text="F5 / F6 = the old left / right mouse")
+        lay.label(text="Keys (click a section to open it):", icon='INFO')
 
 
 # ---------------------------------------------------------------- register
@@ -669,11 +664,11 @@ def register():
         description="How many times this file's cubes were halved from the project's start size")
     palette.register()
     navigate.register()
+    panels.register()
     kc = bpy.context.window_manager.keyconfigs.addon
     if kc:
         navigate.bind(kc, _keys)
         palette.bind(kc, _keys)
-        _bind(kc, "Object Mode", "cubekit.pick_cube", 'L')
         _bind(kc, "Object Mode", "cubekit.tab", 'TAB')
         _bind(kc, "Mesh", "cubekit.tab", 'TAB')
         _bind(kc, "Mesh", "cubekit.brush", 'LEFTMOUSE', mode='ADD')
@@ -719,6 +714,7 @@ def unregister():
     navigate.unregister()
     del bpy.types.WindowManager.cubekit_whole
     del bpy.types.WindowManager.cubekit_brush
+    panels.unregister()
     palette.unregister()
     del bpy.types.Scene.cubekit_tier
     for c in reversed(CLASSES):
