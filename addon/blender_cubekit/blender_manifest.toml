@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "blender_cubekit"
-version = "0.8.0"
+version = "0.9.0"
 name = "CubeKit"
 tagline = "Pixel-style cube models: pick, add, remove and colour single cubes"
 maintainer = "TefMeister"

@@ -1,13 +1,11 @@
 # The project's cube size, shared by every model in it (asked for by Tefa, 2026-10-03).
 #
 # A project keeps one small file, cube_project.py, in a folder above its model folders (for the
-# Ashes models: the Screenshots folder, next to the cubekit folder). It holds two numbers:
-#   CUBE_MM_START   the cube size the project started with, in millimetres - the biggest it can be
-#   TIER            how many times the cubes have been made finer: each step halves the cube, so
-#                   one cube becomes 8 (tier 1), 64 (tier 2) ...
-# The build scripts keep drawing on the start grid; editing copies are made finer to match TIER.
-# Going back up is not offered: merging 8 cubes into 1 would throw detail away, and cubes bigger
-# than the start would break every model built on the start grid.
+# Ashes models: the Screenshots folder, next to the cubekit folder). It holds the cube size the
+# project started with (CUBE_MM_START, millimetres): the biggest any of its models can be.
+# How fine each model is, is that model file's own choice (the add-on's cube size buttons, stored
+# in the .blend), so making one weapon finer leaves the others at the start size (Tefa, 2026-10-03).
+# A TIER line from version 0.8.0 is ignored.
 import os
 import re
 
@@ -15,13 +13,10 @@ FILE = "cube_project.py"
 SEARCH_UP = 6                     # how many folders above the open .blend to look for the file
 MIN_MM = 0.05                     # no finer than this
 
-TEMPLATE = '''# This project's cube size, read by the CubeKit add-on (github.com/TefMeister/blender-cubekit).
-# Every cube model in the project uses it, so they always match.
-# CUBE_MM_START: the size the project started with, in millimetres. Never make it bigger.
-# TIER: how many times the cubes were made finer. Each step halves the cube: 1 cube -> 8 cubes.
-#       Change it with the add-on's "Finer cubes" button, which also converts the open models.
+TEMPLATE = '''# This project's starting cube size, read by the CubeKit add-on (github.com/TefMeister/blender-cubekit).
+# CUBE_MM_START: the size the project started with, in millimetres. No model goes bigger than this.
+# Each model file can be made finer (half, quarter) with the add-on's cube size buttons.
 CUBE_MM_START = {start}
-TIER = {tier}
 '''
 
 

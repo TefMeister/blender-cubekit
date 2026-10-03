@@ -39,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 8, 0),
+    "version": (0, 9, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -67,13 +67,19 @@ from . import project   # noqa: E402  the project's cube size and tier
 project = _il.reload(project)
 
 
+SIZE_STEPS = 3      # cube sizes offered: the start size, half, quarter (3.4, 1.7, 0.85 mm for Ashes)
+
+
 def _project():
-    """(project file or None, start mm, tier, design metres, edit metres)."""
+    """(project file or None, start mm, this file's tier, design metres, edit metres). The start
+    size is the project's (cube_project.py, else the kit's cube_size.py); how fine the cubes are is
+    this file's own choice (Tefa, 2026-10-03: one weapon finer must not change the others)."""
     import importlib
     import cube_size
     importlib.reload(cube_size)
     path = project.find(bpy.data.filepath)
-    start, tier = project.read(path, cube_size.CUBE_MM)
+    start, _ = project.read(path, cube_size.CUBE_MM)
+    tier = bpy.context.scene.cubekit_tier if bpy.context.scene else 0
     return path, start, tier, start / 1000.0, project.size_mm(start, tier) / 1000.0
 
 
@@ -549,33 +555,31 @@ in its most common colour"""
         return {'FINISHED'}
 
 
-class CUBEKIT_OT_finer(bpy.types.Operator):
-    """Make the WHOLE project's cubes one step finer: every cube becomes 8 cubes of half the size,
-in the same colours. Only finer is possible, never bigger. The open models change now; the
-project's other models change the next time they are opened for editing"""
-    bl_idname = "cubekit.finer"
-    bl_label = "Finer cubes, whole project"
+class CUBEKIT_OT_set_size(bpy.types.Operator):
+    """Change the cube size of THIS file only. Smaller: every cube becomes 8 in the same colours.
+Bigger: every 8 become one again - a big cube stays where at least half its small cubes are, and
+fine detail is kept as far as the bigger cube's sides can hold it. Other files are not touched"""
+    bl_idname = "cubekit.set_size"
+    bl_label = "Cube size for this file"
     bl_options = {'REGISTER', 'UNDO'}
 
+    tier: bpy.props.IntProperty(min=0, max=SIZE_STEPS - 1)
+
     def invoke(self, context, event):
+        if self.tier == context.scene.cubekit_tier:
+            return {'CANCELLED'}
         return context.window_manager.invoke_confirm(self, event)
 
     def execute(self, context):
-        if not bpy.data.filepath:
-            self.report({'ERROR'}, "save the file first, so the project can be found")
+        _path, start, old, _, _ = _project()
+        if self.tier == old:
             return {'CANCELLED'}
-        path, start, tier, _, _ = _project()
-        if project.size_mm(start, tier + 1) < project.MIN_MM:
-            self.report({'WARNING'}, "already as fine as it goes")
-            return {'CANCELLED'}
-        if path is None:
-            path = os.path.join(project.home_for(bpy.data.filepath), project.FILE)
-        project.write(path, start, tier + 1)
+        context.scene.cubekit_tier = self.tier
         if context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         n = _match_size([o for o in bpy.data.objects if o.type == 'MESH'])
-        self.report({'INFO'}, "cubes are now %.3g mm: %d model part(s) converted, 1 cube = %d"
-                    % (project.size_mm(start, tier + 1), n, 8 ** (tier + 1)))
+        self.report({'INFO'}, "cubes in this file are now %.3g mm (%d part(s) changed)"
+                    % (project.size_mm(start, self.tier), n))
         return {'FINISHED'}
 
 
@@ -591,12 +595,17 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         wm = context.window_manager
         lay = self.layout
         col = lay.column(align=True)
+        box = lay.box()
+        box.label(text="cube size, this file only", icon='MESH_CUBE')
         try:
-            _path, start, tier, _, V = _project()
-            col.label(text="cube size: %.3g mm" % (V * 1000) + ("  (start %.3g, finer x%d)" % (start, tier) if tier else ""))
+            _path, start, tier, _, _ = _project()
+            row = box.row(align=True)
+            for t in range(SIZE_STEPS):
+                row.operator("cubekit.set_size", text="%.3g mm" % project.size_mm(start, t),
+                             depress=(t == tier)).tier = t
         except Exception:
-            col.label(text="cube size: (kit not found)", icon='ERROR')
-        col.operator("cubekit.finer", text="Finer cubes, whole project (1 = 8)", icon='MOD_REMESH')
+            box.label(text="(kit not found)", icon='ERROR')
+        col = lay.column(align=True)
         col.operator("cubekit.colours_on", icon='SHADING_TEXTURE')
         col.operator("cubekit.pick_mode", icon='MESH_CUBE')
         col.operator("cubekit.save_pick_copy", icon='FILE_TICK')
@@ -629,7 +638,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 
 CLASSES = (CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
            CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
-           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_OT_finer,
+           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_OT_set_size,
            CUBEKIT_PT_panel)
 _keys = []
 _walk_moved = []          # (keymap item, old key) for the walk mode's Tab, put back on unregister
@@ -655,6 +664,9 @@ def register():
         name="whole cubes", default=True, description="A pick grabs whole cubes (on) or single sides (off). F toggles")
     bpy.types.WindowManager.cubekit_brush = bpy.props.IntProperty(
         name="brush size", default=18, min=2, max=300, description="Brush radius in pixels; the wheel changes it while picking")
+    bpy.types.Scene.cubekit_tier = bpy.props.IntProperty(
+        name="cube size step", default=0, min=0, max=SIZE_STEPS - 1,
+        description="How many times this file's cubes were halved from the project's start size")
     palette.register()
     navigate.register()
     kc = bpy.context.window_manager.keyconfigs.addon
@@ -708,5 +720,6 @@ def unregister():
     del bpy.types.WindowManager.cubekit_whole
     del bpy.types.WindowManager.cubekit_brush
     palette.unregister()
+    del bpy.types.Scene.cubekit_tier
     for c in reversed(CLASSES):
         bpy.utils.unregister_class(c)
