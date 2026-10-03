@@ -1,7 +1,7 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.10.0) adds to Blender. The add-on puts two tabs in the 3D
-view's side panel, **CubeKit** and **CubeKit Build**: with the mouse over the 3D view, press **N** if
+Everything the CubeKit add-on (version 0.11.0) adds to Blender. The add-on puts three tabs in the 3D
+view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
 Every change can be undone with **Ctrl + Z**.
@@ -114,6 +114,11 @@ No mode to switch on: the 3D view moves like a game.
 | **Shift** | Faster, while held. |
 | **Middle mouse** held | Turn your head: look around from where you stand. |
 | **Wheel** | Zoom (Blender's own). |
+
+The speeds are set in the **CubeKit Move** tab: **moving speed** (W A S D), **up / down speed**
+(X / Z), how much **Shift** multiplies them, and the **look speed** for the middle mouse. **Back to the
+starting speeds** resets them. They are kept in Blender's own preferences, so they are the same in
+every file (the same settings also show under Edit > Preferences > Add-ons > CubeKit).
 
 ### Where Blender's own keys went
 

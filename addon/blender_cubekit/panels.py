@@ -12,6 +12,7 @@ HELP = [
         ("Middle mouse", "hold to look around"),
         ("Wheel", "zoom"),
         ("R", "whole model in view (edit mode)"),
+        ("CubeKit Move tab", "change the speeds"),
     ]),
     ("Picking (edit mode)", 'RESTRICT_SELECT_OFF', [
         ("Tab", "in / out of editing, nothing picked"),
