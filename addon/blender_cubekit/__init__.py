@@ -7,7 +7,8 @@
 #   Every cube on its own  cuts merged strips back into single cubes so single cubes can be picked,
 #                          and gives the object its full cube list so cubes can be added and removed
 #   Save pick copy         saves <file>_pick.blend beside the open file (the original stays lean)
-#   the palette            colours; the brush button beside one paints the picked sides or cubes
+#   the palette            Paint-style colour squares: click one to paint what is picked; hover one
+#                          and press 1-0 to give it a key; in edit mode 1-0 paint under the mouse
 #
 # Keys, object mode:
 #   L  (mouse over a cube)   picks exactly that one cube and drops you into edit mode.
@@ -37,7 +38,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 5, 0),
+    "version": (0, 6, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -53,6 +54,7 @@ for _p in (_HERE, os.path.abspath(os.path.join(_HERE, "..", ".."))):
 
 
 from . import navigate  # noqa: E402  W A S D movement, the hover circle, Ctrl + wheel
+from . import palette   # noqa: E402  the Paint-style colours and the 1-0 keys
 
 
 def _kit():
@@ -431,77 +433,6 @@ to pick and paint on their own - cracks, wear and fine lines. The cube keeps its
         return {'FINISHED'}
 
 
-# ---------------------------------------------------------------- the palette
-
-class CubeKitColour(bpy.types.PropertyGroup):
-    color: bpy.props.FloatVectorProperty(name="colour", subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0,
-                                         default=(0.8, 0.8, 0.8))
-
-
-class CUBEKIT_OT_apply_colour(bpy.types.Operator):
-    """Paint the picked sides (or whole cubes) with this colour"""
-    bl_idname = "cubekit.apply_colour"
-    bl_label = "Paint"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        pal = context.scene.cubekit_palette
-        if not (0 <= self.index < len(pal)):
-            return {'CANCELLED'}
-        rgb = tuple(pal[self.index].color)
-        whole = context.window_manager.cubekit_whole
-        n = _for_each_edited(context, lambda edit, ob, V, keys: edit.paint(ob, V, keys, rgb, whole))
-        if not n:
-            self.report({'WARNING'}, "nothing picked, or not a cube-edit object (use Every cube on its own)")
-            return {'CANCELLED'}
-        return {'FINISHED'}
-
-
-class CUBEKIT_OT_palette_add(bpy.types.Operator):
-    """Add a colour to the palette: the picked side's colour if something is picked, else grey"""
-    bl_idname = "cubekit.palette_add"
-    bl_label = "Add colour"
-
-    def execute(self, context):
-        rgb = None
-        _, edit, V = _kit()
-        if context.mode == 'EDIT_MESH':
-            obs = _edit_objects(context)
-            bpy.ops.object.mode_set(mode='OBJECT')
-            for ob in obs:
-                if edit.has_colours(ob):
-                    s = edit.Solid(ob, V)
-                    keys = s.selected_keys()
-                    if keys:
-                        rgb = s.colour_of(*keys[0])
-                        break
-            bpy.ops.object.mode_set(mode='EDIT')
-        item = context.scene.cubekit_palette.add()
-        if rgb:
-            item.color = rgb
-        return {'FINISHED'}
-
-
-class CUBEKIT_OT_palette_remove(bpy.types.Operator):
-    """Take this colour off the palette"""
-    bl_idname = "cubekit.palette_remove"
-    bl_label = "Remove colour"
-
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        pal = context.scene.cubekit_palette
-        if 0 <= self.index < len(pal):
-            pal.remove(self.index)
-        return {'FINISHED'}
-
-
-DEFAULT_PALETTE = [(0.16, 0.16, 0.17), (0.45, 0.46, 0.48), (0.62, 0.41, 0.22), (0.35, 0.16, 0.14),
-                   (0.75, 0.59, 0.27), (0.63, 0.14, 0.12), (0.92, 0.88, 0.80), (0.20, 0.35, 0.65)]
-
-
 # ---------------------------------------------------------------- the panel
 
 class CUBEKIT_PT_panel(bpy.types.Panel):
@@ -531,18 +462,8 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         box.operator("cubekit.split", text="Split into 4 (C)", icon='MESH_GRID')
 
         box = lay.box()
-        row = box.row(align=True)
-        row.label(text="colours", icon='COLOR')
-        row.operator("cubekit.palette_add", text="", icon='ADD')
-        pal = context.scene.cubekit_palette
-        box.label(text="pick cubes, then click a brush button")
-        if not pal:
-            box.label(text="press + to add one")
-        for i, item in enumerate(pal):
-            row = box.row(align=True)
-            row.prop(item, "color", text="")
-            row.operator("cubekit.apply_colour", text="", icon='BRUSH_DATA').index = i
-            row.operator("cubekit.palette_remove", text="", icon='X').index = i
+        box.label(text="colours", icon='COLOR')
+        palette.draw(box, context)
 
         col = lay.column(align=True)
         col.label(text="object mode: hover a cube, L = pick")
@@ -551,15 +472,15 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         col.label(text="C = split into 4 smaller squares")
         col.label(text="Ctrl + wheel = brush size")
         col.label(text="WASD move, Z down, X up, middle mouse look")
+        col.label(text="1-0 over a cube = paint it that key's colour")
         col.label(text="F5 / F6 = the old left / right mouse")
 
 
 # ---------------------------------------------------------------- register
 
-CLASSES = (CubeKitColour, CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
+CLASSES = (CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
            CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
-           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_apply_colour, CUBEKIT_OT_palette_add,
-           CUBEKIT_OT_palette_remove, CUBEKIT_PT_panel)
+           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_PT_panel)
 _keys = []
 _walk_moved = []          # (keymap item, old key) for the walk mode's Tab, put back on unregister
 GRAVITY_KEY = 'F12'       # where walk mode's "falling" switch goes: a key nobody presses while walking
@@ -574,9 +495,7 @@ def _bind(kc, keymap, idname, key, shift=False, **props):
 
 
 def _seed_palette(scene):
-    if scene and not scene.cubekit_palette:
-        for rgb in DEFAULT_PALETTE:
-            scene.cubekit_palette.add().color = rgb
+    palette.ensure(scene)
 
 
 def register():
@@ -586,11 +505,12 @@ def register():
         name="whole cubes", default=True, description="A pick grabs whole cubes (on) or single sides (off). F toggles")
     bpy.types.WindowManager.cubekit_brush = bpy.props.IntProperty(
         name="brush size", default=18, min=2, max=300, description="Brush radius in pixels; the wheel changes it while picking")
-    bpy.types.Scene.cubekit_palette = bpy.props.CollectionProperty(type=CubeKitColour)
+    palette.register()
     navigate.register()
     kc = bpy.context.window_manager.keyconfigs.addon
     if kc:
         navigate.bind(kc, _keys)
+        palette.bind(kc, _keys)
         _bind(kc, "Object Mode", "cubekit.pick_cube", 'L')
         _bind(kc, "Object Mode", "cubekit.tab", 'TAB')
         _bind(kc, "Mesh", "cubekit.tab", 'TAB')
@@ -636,6 +556,6 @@ def unregister():
     navigate.unregister()
     del bpy.types.WindowManager.cubekit_whole
     del bpy.types.WindowManager.cubekit_brush
-    del bpy.types.Scene.cubekit_palette
+    palette.unregister()
     for c in reversed(CLASSES):
         bpy.utils.unregister_class(c)

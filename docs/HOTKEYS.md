@@ -19,20 +19,28 @@ The tab also shows the project's cube size, read from `cube_size.py`.
 
 ## Painting cubes with the palette
 
-The palette lives in the **CubeKit** tab, on the right side of the 3D view.
+The palette lives in the **CubeKit** tab, on the right side of the 3D view, and is laid out like
+Microsoft Paint's.
 
 1. With the mouse over the 3D view, press **N** if the side panel is hidden.
 2. Click the **CubeKit** tab on the panel's right edge.
-3. Scroll down to the **colours** box.
+3. Scroll down to the **colours** box: two rows of Paint's colours, and a third row of your own.
 
-To paint:
+**Click to paint.** Pick sides or cubes (Tab, left mouse), then click a colour square: they take
+that colour at once. **F** decides whether a side or the whole cube is painted.
 
-1. Press **Tab** and pick cubes with the left mouse (**F** chooses sides only or whole cubes).
-2. Click the **brush button** next to a colour. The picked sides or cubes take that colour.
+**Number keys 1 to 0** (the row above the letters, not the numpad):
 
-Click a colour swatch itself to change that colour. **+** at the top of the box adds a colour (it
-copies the picked side's colour when something is picked); **x** removes one. The palette is saved
-with the file. Ctrl+Z undoes a paint.
+- **Hover a colour square and press a number**: that number now means that colour. The number is
+  drawn in the square's corner. 1 to 0 start as Paint's top row.
+- **Hover a cube in edit mode and press a number**: paints the side under the mouse with that
+  colour, or the whole cube when **F** is on whole cubes. Nothing needs to be picked first, and
+  what is picked stays picked.
+
+**Your own colours.** The big square at the top is the last colour used; click it to fine-tune that
+colour. Mix a colour in the bar under the grid and press **Add to my colours**, or click an empty
+square in your row. **Ctrl + click** one of your own squares to empty it. The palette and the number
+keys are saved with the file. Ctrl+Z undoes a paint.
 
 ## Keys the add-on adds
 

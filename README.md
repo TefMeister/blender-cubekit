@@ -51,8 +51,8 @@ the full repo is only needed to build models.
   un-picks, **F** switches between sides and whole cubes, **E** adds a cube, **Q** removes one,
   **R** puts the whole model in view, **C** splits a picked side into four smaller squares for
   cracks, wear and fine lines.
-- **Painting:** press **N**, open the **CubeKit** tab, scroll to **colours**, pick cubes, then click
-  the **brush button** beside a colour. [Step by step](docs/HOTKEYS.md#painting-cubes-with-the-palette).
+- **Painting:** press **N**, open the **CubeKit** tab, scroll to **colours**, pick cubes, then click a
+  colour square. Or hover a cube and press **1** to **0** to paint it with that key's colour. [Step by step](docs/HOTKEYS.md#painting-cubes-with-the-palette).
 - **Moving around is always on**, like a game: **W A S D** move, **Z** down, **X** up, **Shift**
   faster, **middle mouse** held turns your head. **Ctrl + wheel** sizes the picking brush.
 - **Tab**: back out.
@@ -74,7 +74,7 @@ Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
 ## Where it stands
 
 - 2026-10-03: repo made from the shared kit folder. Pick mode and the add-on are new and have been
-  used on one animated weapon with hands. Add-on 0.5.0 adds splitting a side into four for fine detail. 0.4.0 added game-style movement, always on. 0.3.0 added cube editing: the picking brush,
+  used on one animated weapon with hands. Add-on 0.6.0 brings a Paint-style palette with number keys. 0.5.0 added splitting a side into four for fine detail. 0.4.0 added game-style movement, always on. 0.3.0 added cube editing: the picking brush,
   adding and removing cubes, and a colour palette. Edits live in the editing copy; turning an
   edited copy back into a game model is not built yet. The exporter covers GZDoom only.
 
