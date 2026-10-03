@@ -64,6 +64,17 @@ the **L** key use.
 Pick-mode meshes are saved as `<name>_pick.blend`, never over the original: the game export reads
 the mesh as it is in the file, and a pick-mode file would be thirty times heavier in the game.
 
+## 4b. Editing single cubes
+
+`edit.py` turns an editing copy into something cubes can be added to and taken from. A mesh only
+holds the outside faces, so it cannot say on its own whether the cube behind a face is solid (a
+mug's wall) or air (the mug's inside). The first time, it floods in from outside the model: a face
+is a wall between solid and air, so every cube the flood cannot reach is solid. That full cube list
+is then kept on the object. Each face's colour is read from the atlas once and kept as a colour on
+the mesh (the colour as painted, plus the shaded colour that is shown). After that, adding,
+removing and painting simply change the list and rebuild the mesh. **Not built yet:** turning an
+edited copy back into the merged game model.
+
 ## 5. Animation: stop-motion, tic for tic
 
 Models that move are keyed in Blender with **constant** interpolation (`bl.all_constant`): no

@@ -8,9 +8,12 @@ the sidebar if it is hidden).
 
 | Button | What it does |
 | --- | --- |
-| **Colours on** | Shows the model flat and unlit with its colours, which is exactly what the game shows. Use it when the model looks grey or shaded. |
-| **Every cube on its own** | Cuts the merged strips back into single cubes so that one cube can be picked. Works on the selected objects, or on everything when nothing is selected. Already-cut objects are left alone. |
-| **Save pick copy** | Saves the scene as `<name>_pick.blend` beside the open file. The original file is what the game export reads, so it is never overwritten with cut-up cubes. |
+| **Colours on** | Shows the model flat and unlit with its colours, which is exactly what the game shows. |
+| **Every cube on its own** | Gets a model ready for cube editing: cuts merged strips back into single cubes and works out which cubes are solid inside, so cubes can be picked, added, removed and coloured. Works on the selected objects, or on everything when nothing is selected. |
+| **Save pick copy** | Saves the scene as `<name>_pick.blend` beside the open file. The original file is what the game export reads, so it is never overwritten with the editing version. |
+| **sides only / whole cubes** | What a pick grabs and what a colour paints. **F** switches it. |
+| **brush size** | How big the picking brush is. The mouse wheel changes it while picking. |
+| **colours** | The palette. Click a swatch to change it, the brush button beside it paints the picked sides (or whole cubes) with it, **+** adds a colour (the picked side's colour, if something is picked), **x** removes one. The palette is saved with the file. |
 
 The tab also shows the project's cube size, read from `cube_size.py`.
 
@@ -22,18 +25,21 @@ Object mode (before Tab):
 | --- | --- |
 | **L** (mouse over a cube) | Picks exactly that cube: selects the object, enters edit mode, selects the one cube under the mouse. |
 
-Edit mode (after Tab), set up the way a game is played (asked for 2026-10-03):
+Edit mode (after Tab), asked for on 2026-10-03:
 
 | Key | What it does |
 | --- | --- |
-| **Left mouse** | Picks the cube under the mouse. One click = that cube only; **Shift** + click adds a cube. |
-| **Right mouse** | Paint-select on or off. With it on, hold the left mouse and sweep over cubes to add them all. The CubeKit tab shows which is on. |
-| **Space** | Walk around the model: **W A S D** move, the mouse looks, **Q** lowers you, **E** raises you, **Shift** goes faster. **Space** again (or Esc) stops. |
-| **F5** | What the left mouse did before: Blender's plain click-select of a face, edge or vertex. |
+| **Left mouse** | The picking brush. A click picks the cube (or side) under the mouse; hold and sweep to pick more. Turn the **wheel** while holding to make the brush bigger or smaller. An orange circle shows it. |
+| **Right mouse** | Held: the same brush, un-picking. A red circle shows it. |
+| **F** | Sides only, or whole cubes. |
+| **E** | Adds a cube outside every picked side, in that side's colour. The new cube's outer side becomes the picked one, so **E E E** builds a row of three. Needs sides picked, so it knows which way. |
+| **Q** | Removes the cube behind every picked side; the next cube inward becomes picked, so **Q Q** digs two deep. With whole cubes picked, removes those cubes. |
+| **R** | The whole model in view, at a sensible distance. |
+| **F5** | What the left mouse did before: Blender's plain click-select. |
 | **F6** | What the right mouse did before: the edit-mesh menu. |
+| **Space** | Blender's own: play and stop the animation. |
 
-In edit mode **L** still works too: it is Blender's own "select linked under the mouse", which on a
-cut-up model is exactly one cube.
+Every edit can be undone with **Ctrl+Z**.
 
 ## Blender keys worth knowing
 
