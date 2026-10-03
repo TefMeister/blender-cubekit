@@ -30,10 +30,18 @@ become separate); a bigger size adds marks. Blocks stay on their own size's grid
 always covers the same eight 3.4 mm cubes.
 
 **Questions to settle first:**
-1. **Bigger sizes on a selection** - with some 3.4 mm cubes picked, what should 6.8 mm do? A 6.8 mm
-   cube covers a fixed 2 x 2 x 2 block of 3.4 mm cubes. Options: join every block the selection
-   touches (filling the block's empty spots by the same more-than-half rule), or only blocks where
-   all 8 are picked.
+1. **Bigger sizes on a selection** - ✅ Tefa chose (2026-10-03): **join every block the selection
+   touches**, filling the block's empty spots by the more-than-half rule.
+   **Still open: where the bigger cube lands.** Tefa asked whether the picked 3.4 mm cube always stays
+   in the upper-left corner, with the 6.8 mm cube growing right, down and inward from it. Two ways:
+   - *Anchored on the pick* (Tefa's picture): predictable from the click, but neighbouring big cubes
+     need not line up, so steps of half a big cube appear, and going back down or up again can land
+     somewhere different.
+   - *Fixed grid* (the 3.4 mm cubes are already on one): every 6.8 mm cube covers the same eight
+     3.4 mm cubes every time, so big cubes always line up and up / down always round-trips; the
+     picked cube can end up in any of the 8 corners. Recommended, with a **preview outline** under
+     the mouse showing exactly where the bigger cube will land before anything changes.
+   Tefa to decide on Wednesday, ideally after seeing the preview idea.
 2. **Neighbours of different sizes** - a 3.4 mm side next to a 1.7 mm cube shows part of its face.
    That is fine for the look; the game export has to handle it too.
 3. **The game export** - edits in editing copies do not reach the game yet at all (a separate
