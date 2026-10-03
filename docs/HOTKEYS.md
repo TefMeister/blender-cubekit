@@ -15,7 +15,15 @@ the sidebar if it is hidden).
 | **brush size** | How big the picking brush is. The mouse wheel changes it while picking. |
 | **colours** | The palette. Click a swatch to change it, the brush button beside it paints the picked sides (or whole cubes) with it, **+** adds a colour (the picked side's colour, if something is picked), **x** removes one. The palette is saved with the file. |
 
-The tab also shows the project's cube size, read from `cube_size.py`.
+The tab also shows the project's cube size.
+
+**Finer cubes, whole project (1 = 8).** When a project needs finer detail, this button halves the
+cube size for the whole project: every cube becomes 8 cubes of half the size, in the same place and
+colours, and detail painted on split sides lands on the new smaller sides. It asks before it acts.
+It can only go finer, never bigger than the size the project started with: bigger cubes would break
+every model built on the starting grid. The models open now change straight away; the project's other
+models change the next time they are opened for editing (Tab or Every cube on its own). The size is
+kept in the project's `cube_project.py` (see [How it works](HOW-IT-WORKS.md)).
 
 ## Painting cubes with the palette
 

@@ -310,6 +310,11 @@ with the colour that has this number"""
             self.report({'WARNING'}, "not ready for cube editing yet (use Every cube on its own)")
             return {'CANCELLED'}
         bpy.ops.object.mode_set(mode='OBJECT')
+        from . import _match_size
+        if _match_size([ob]):
+            bpy.ops.object.mode_set(mode='EDIT')
+            self.report({'INFO'}, "cubes made finer to match the project's size: press it again")
+            return {'FINISHED'}
         s = edit.Solid(ob, V)
         keep = s.selected_keys()
         key = s.key_of(ob.data.polygons[face])

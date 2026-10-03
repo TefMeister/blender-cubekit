@@ -61,7 +61,7 @@ Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
 
 ## The rules
 
-1. **One cube size per project.** In `cube_size.py`, nowhere else. A hand with bigger cubes than the
+1. **One cube size per project.** Set once, made finer only for the whole project at once (1 cube into 8). A hand with bigger cubes than the
    gun it holds looks like it came from a different game.
 2. **Every number has a name.** Sizes, colours, timings, all in the settings file with a comment.
 3. **No lights.** Materials are pure emission; the preview is the game's picture.
@@ -74,7 +74,7 @@ Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
 ## Where it stands
 
 - 2026-10-03: repo made from the shared kit folder. Pick mode and the add-on are new and have been
-  used on one animated weapon with hands. Add-on 0.6.0 brings a Paint-style palette with number keys. 0.5.0 added splitting a side into four for fine detail. 0.4.0 added game-style movement, always on. 0.3.0 added cube editing: the picking brush,
+  used on one animated weapon with hands. Add-on 0.8.0 can make a whole project's cubes finer, 1 cube into 8. 0.7.0 split sides 4 or 16 ways. 0.6.0 brought a Paint-style palette with number keys. 0.5.0 added splitting a side into four for fine detail. 0.4.0 added game-style movement, always on. 0.3.0 added cube editing: the picking brush,
   adding and removing cubes, and a colour palette. Edits live in the editing copy; turning an
   edited copy back into a game model is not built yet. The exporter covers GZDoom only.
 

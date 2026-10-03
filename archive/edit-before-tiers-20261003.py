@@ -91,16 +91,10 @@ class Solid:
     """The cubes of one object: which cells are solid, and the colour of every cube and face."""
 
     def __init__(self, ob, voxel_m):
-        # The mesh says what size its cubes are (written by write()); that wins over the caller's
-        # number, so an object not yet made finer can never be read at the wrong size.
-        voxel_m = ob.get("cubekit_voxel_m", voxel_m)
         self.ob, self.v = ob, voxel_m
         me = ob.data
-        if "cubekit_off" in ob:
-            self.off = list(ob["cubekit_off"])
-        else:
-            c0 = me.vertices[0].co
-            self.off = [c0[i] / voxel_m - math.floor(c0[i] / voxel_m + 1e-6) for i in range(3)]
+        c0 = me.vertices[0].co
+        self.off = [c0[i] / voxel_m - math.floor(c0[i] / voxel_m + 1e-6) for i in range(3)]
         self.faces = {}            # (cell, dir) -> base rgb (0-1) of that face
         self.split = {}            # (cell, dir) -> [rgb] * 16: a split side's 4 x 4 fine colours
         self.level = {}            # (cell, dir) -> 1 or 2: how a split side is shown and picked
@@ -380,8 +374,6 @@ class Solid:
             rgbs += list(r) if r else [-1.0, -1.0, -1.0]
         ob["cubekit_cells"] = flat
         ob["cubekit_cell_rgb"] = rgbs
-        ob["cubekit_voxel_m"] = self.v
-        ob["cubekit_off"] = list(self.off)
         return len(polys)
 
     def key_of(self, poly):
@@ -502,61 +494,3 @@ def join(ob, voxel_m, keys, whole_cubes):
         s.join(cell, d)
     s.write(list(sides))
     return len(sides)
-
-
-def subdivide(ob, voxel_m):
-    """One tier finer: every cube becomes 8 cubes of half the size, in the same place and colours.
-    A split side's 4 x 4 fine colours land exactly on the four smaller sides that replace it."""
-    s = Solid(ob, voxel_m)
-    v = s.v
-    sh = [math.floor(2 * o + 1e-6) for o in s.off]
-    new_off = [2 * o - sh[i] for i, o in enumerate(s.off)]
-    cells, cell_rgb = set(), {}
-    for c in s.cells:
-        rgb = s.cell_rgb.get(c)
-        for a in (0, 1):
-            for b in (0, 1):
-                for e in (0, 1):
-                    n = (2 * c[0] + sh[0] + a, 2 * c[1] + sh[1] + b, 2 * c[2] + sh[2] + e)
-                    cells.add(n)
-                    if rgb:
-                        cell_rgb[n] = rgb
-    faces, split, level = {}, {}, {}
-    for (cell, d), rgb in s.faces.items():
-        if cell not in s.cells or (cell[0] + d[0], cell[1] + d[1], cell[2] + d[2]) in s.cells:
-            continue                                     # only the outside sides carry over
-        ax = [i for i in range(3) if d[i]][0]
-        ua, va = [i for i in range(3) if i != ax]
-        cols = s.split.get((cell, d))
-        for a in (0, 1):
-            for b in (0, 1):
-                o3 = [0, 0, 0]
-                o3[ax] = 1 if d[ax] > 0 else 0
-                o3[ua], o3[va] = a, b
-                child = tuple(2 * cell[i] + sh[i] + o3[i] for i in range(3))
-                if not cols:
-                    faces[(child, d)] = rgb
-                    continue
-                fine = [None] * (FINE * FINE)
-                for cv in range(FINE):
-                    for cu in range(FINE):
-                        fine[cu + FINE * cv] = cols[(2 * a + cu // 2) + FINE * (2 * b + cv // 2)]
-                faces[(child, d)] = fine[0]
-                if len(set(fine)) > 1:
-                    split[(child, d)] = fine
-                    level[(child, d)] = 1
-    s.v, s.off = v / 2, new_off
-    s.cells, s.cell_rgb, s.faces, s.split, s.level = cells, cell_rgb, faces, split, level
-    return s.write()
-
-
-def ensure_size(ob, target_m, design_m):
-    """Make an object's cubes finer until they are the project's size. Returns how many steps it
-    took (0 when it already matched). Never makes cubes bigger."""
-    v = ob.get("cubekit_voxel_m", design_m)
-    steps = 0
-    while v > target_m * 1.01 and v / 2 >= target_m * 0.99:
-        subdivide(ob, v)
-        v /= 2
-        steps += 1
-    return steps
