@@ -1,5 +1,5 @@
-# Cube-level editing of a pick-mode mesh: add a cube, remove a cube, recolour a side, split a side for
-# fine detail. The add-on's E, Q, C and colour palette run through here (asked for by Tefa, 2026-10-03).
+# Cube-level editing of a pick-mode mesh: add a cube, remove a cube, recolour a side. The add-on's
+# E, Q and colour palette run through here (asked for by Tefa, 2026-10-03).
 #
 # A pick-mode mesh only holds the EXPOSED faces, so on its own it cannot say whether the cube behind
 # a face is solid or air (the mug's wall is solid two cubes deep, the mug's inside is air; neither
@@ -70,22 +70,6 @@ def _atlas_pixels(ob):
                 return px, w, h
     return None
 
-# A side of a cube can be split for fine detail (C). Its colours are always kept as a 4 x 4 grid
-# (FINE x FINE); what is shown depends on its level:
-#   level 1  four quarters - a quarter whose four fine colours match is one square, one that holds
-#            detail painted at level 2 shows that detail but is picked and painted as one quarter
-#   level 2  sixteen small squares, each picked and painted on its own
-# C goes plain -> 1 -> 2 -> 1 -> 2 ...; Shift + C joins a side back into one (Tefa, 2026-10-03).
-FINE = 4
-LEVEL, GROUP = "cubekit_level", "cubekit_group"
-
-
-def _quarter_of(fi):
-    """The four fine squares in the same quarter as fine square fi."""
-    fu, fv = fi % FINE, fi // FINE
-    qu, qv = fu // 2 * 2, fv // 2 * 2
-    return tuple(sorted((qu + a) + FINE * (qv + b) for a in range(2) for b in range(2)))
-
 
 class Solid:
     """The cubes of one object: which cells are solid, and the colour of every cube and face."""
@@ -96,8 +80,7 @@ class Solid:
         c0 = me.vertices[0].co
         self.off = [c0[i] / voxel_m - math.floor(c0[i] / voxel_m + 1e-6) for i in range(3)]
         self.faces = {}            # (cell, dir) -> base rgb (0-1) of that face
-        self.split = {}            # (cell, dir) -> [rgb] * 16: a split side's 4 x 4 fine colours
-        self.level = {}            # (cell, dir) -> 1 or 2: how a split side is shown and picked
+        self.split = {}            # (cell, dir) -> [rgb] * 4: a side split into 2 x 2 squares
         self.cell_rgb = {}         # cell -> base rgb, the cube's own colour
         self.cells = set()
         self._read_mesh(me)
@@ -119,25 +102,6 @@ class Solid:
     def grid(self, p):
         return [p[i] / self.v - self.off[i] for i in range(3)]
 
-    def _place(self, me, poly):
-        """(cell, dir, fine squares the face covers, its size in fine squares, its level)."""
-        d = _dir_of(poly.normal)
-        centre = poly.center - Vector(d) * (0.5 * self.v)
-        cell = tuple(math.floor(c) for c in self.grid(centre))
-        ax = [i for i in range(3) if d[i]][0]
-        ua, va = [i for i in range(3) if i != ax]
-        gs = [self.grid(me.vertices[i].co) for i in poly.vertices]
-        fu0 = round(min((g[ua] - cell[ua]) * FINE for g in gs))
-        fv0 = round(min((g[va] - cell[va]) * FINE for g in gs))
-        size = max(1, round(max((g[ua] - cell[ua]) * FINE for g in gs)) - fu0)
-        covered = tuple(sorted((fu0 + a) + FINE * (fv0 + b) for a in range(size) for b in range(size)))
-        lv_attr = me.attributes.get(LEVEL)
-        if lv_attr is not None:
-            level = lv_attr.data[poly.index].value
-        else:
-            level = 0 if size == FINE else 1          # files from before 16-way splitting
-        return cell, d, covered, size, level
-
     def _read_mesh(self, me):
         base = me.color_attributes.get(BASE)
         px = None if base else _atlas_pixels(self.ob)
@@ -145,7 +109,9 @@ class Solid:
         for poly in me.polygons:
             if len(poly.vertices) != 4:
                 continue
-            cell, d, covered, size, level = self._place(me, poly)
+            d = _dir_of(poly.normal)
+            centre = poly.center - Vector(d) * (0.5 * self.v)
+            cell = tuple(math.floor(c) for c in self.grid(centre))
             if base:
                 col = base.data[poly.loop_indices[0]].color
                 rgb = (to_srgb(col[0]), to_srgb(col[1]), to_srgb(col[2]))
@@ -160,20 +126,24 @@ class Solid:
                 rgb = tuple(min(1.0, float(pixels[i + j]) / k) for j in range(3))
             else:
                 rgb = (0.6, 0.6, 0.6)
-            key = (cell, d)
-            if size == FINE and level == 0:
-                self.faces[key] = rgb
+            if poly.area < 0.5 * self.v * self.v:            # one of a split side's four squares
+                sub = self._sub_of(poly.center, cell, d)
+                self.split.setdefault((cell, d), [None] * 4)[sub] = rgb
+                self.faces.setdefault((cell, d), rgb)
             else:
-                cols = self.split.setdefault(key, [None] * (FINE * FINE))
-                for fi in covered:
-                    cols[fi] = rgb
-                self.level[key] = max(1, level)
-                self.faces.setdefault(key, rgb)
+                self.faces[(cell, d)] = rgb
             self.cells.add(cell)
         for key, cols in self.split.items():               # a square that went missing: its side's colour
-            for i in range(FINE * FINE):
+            for i in range(4):
                 if cols[i] is None:
                     cols[i] = self.faces.get(key, (0.6, 0.6, 0.6))
+
+    def _sub_of(self, centre, cell, d):
+        """Which of a side's four squares a point is in: 0..3, (u half) + 2 * (v half)."""
+        ax = [i for i in range(3) if d[i]][0]
+        ua, va = [i for i in range(3) if i != ax]
+        g = self.grid(centre)
+        return (1 if g[ua] - cell[ua] > 0.5 else 0) + (2 if g[va] - cell[va] > 0.5 else 0)
 
     def _flood(self):
         """Air = every cell reachable from outside without crossing a face. The rest is solid."""
@@ -207,54 +177,35 @@ class Solid:
                         self.cells.add(c)
 
     # ---- editing ----
-    def _forget(self, key):
-        self.faces.pop(key, None)
-        self.split.pop(key, None)
-        self.level.pop(key, None)
-
     def add(self, cell, rgb):
         self.cells.add(cell)
         self.cell_rgb[cell] = rgb
         for d in DIRS:
-            self._forget((cell, d))
+            self.faces.pop((cell, d), None)
+            self.split.pop((cell, d), None)
 
     def remove(self, cell):
         self.cells.discard(cell)
         for d in DIRS:
-            self._forget((cell, d))
+            self.faces.pop((cell, d), None)
+            self.split.pop((cell, d), None)
 
-    def paint_face(self, cell, d, rgb, covered=None):
-        key = (cell, d)
-        if covered is not None and key in self.split:
-            for fi in covered:
-                self.split[key][fi] = rgb
+    def paint_face(self, cell, d, rgb, sub=None):
+        if sub is not None and (cell, d) in self.split:
+            self.split[(cell, d)][sub] = rgb
         else:
-            self._forget(key)
-            self.faces[key] = rgb
+            self.faces[(cell, d)] = rgb
+            self.split.pop((cell, d), None)
 
     def paint_cube(self, cell, rgb):
         self.cell_rgb[cell] = rgb
         for d in DIRS:
-            self._forget((cell, d))
+            self.faces.pop((cell, d), None)
+            self.split.pop((cell, d), None)
 
-    def cycle_split(self, cell, d):
-        """C: plain -> 4 -> 16 -> 4 -> 16 ... Colours painted at 16 are kept at 4."""
-        key = (cell, d)
-        if key not in self.split:
-            self.split[key] = [self.colour_of(cell, d)] * (FINE * FINE)
-            self.level[key] = 1
-        else:
-            self.level[key] = 2 if self.level.get(key, 1) == 1 else 1
-
-    def join(self, cell, d):
-        """Shift + C: the side becomes one square again, in its most common colour."""
-        key = (cell, d)
-        cols = self.split.get(key)
-        if not cols:
-            return
-        rgb = max(set(cols), key=cols.count)
-        self._forget(key)
-        self.faces[key] = rgb
+    def split_face(self, cell, d):
+        if (cell, d) not in self.split:
+            self.split[(cell, d)] = [self.colour_of(cell, d)] * 4
 
     def exposed(self, cell):
         return [d for d in DIRS if (cell[0] + d[0], cell[1] + d[1], cell[2] + d[2]) not in self.cells]
@@ -263,38 +214,12 @@ class Solid:
         return self.faces.get((cell, d)) or self.cell_rgb.get(cell) or (0.6, 0.6, 0.6)
 
     # ---- writing ----
-    def _squares(self, key):
-        """[(fu, fv, size, covered, rgb, level, group)] for one side; group > 0 ties together the
-        small squares of a level-1 quarter that holds detail."""
-        cols = self.split.get(key)
-        if not cols:
-            return [(0, 0, FINE, tuple(range(FINE * FINE)), self.colour_of(*key), 0, 0)]
-        level = self.level.get(key, 1)
-        out = []
-        if level == 2:
-            for fv in range(FINE):
-                for fu in range(FINE):
-                    fi = fu + FINE * fv
-                    out.append((fu, fv, 1, (fi,), cols[fi], 2, 0))
-            return out
-        for qv in (0, 2):
-            for qu in (0, 2):
-                quarter = _quarter_of(qu + FINE * qv)
-                if len({cols[fi] for fi in quarter}) == 1:
-                    out.append((qu, qv, 2, quarter, cols[quarter[0]], 1, 0))
-                else:
-                    self._group += 1
-                    for fi in quarter:
-                        out.append((fi % FINE, fi // FINE, 1, quarter, cols[fi], 1, self._group))
-        return out
-
     def write(self, select=()):
-        """Rebuild the object's mesh from the cube list: one quad per exposed face (or per square of a
-        split side), each cube with its own corners. select: keys to leave picked."""
+        """Rebuild the object's mesh from the cube list: one quad per exposed face, each cube with
+        its own corners. select: (cell, dir) keys to leave selected."""
         ob, v = self.ob, self.v
-        verts, vidx, polys, cols_b, cols_v, keys, levels, groups = [], {}, [], [], [], [], [], []
+        verts, vidx, polys, cols_b, cols_v, keys = [], {}, [], [], [], []
         off = self.off
-        self._group = 0
         for cell in self.cells:
             for d in DIRS:
                 nb = (cell[0] + d[0], cell[1] + d[1], cell[2] + d[2])
@@ -302,36 +227,41 @@ class Solid:
                     continue
                 ax = [i for i in range(3) if d[i]][0]
                 ua, va = [i for i in range(3) if i != ax]
-                planeF = FINE * (cell[ax] + (1 if d[ax] > 0 else 0))     # corners in fine units
-                self.faces.setdefault((cell, d), self.colour_of(cell, d))
+                plane2 = 2 * (cell[ax] + (1 if d[ax] > 0 else 0))     # corners in half-cube units
+                base = self.colour_of(cell, d)
+                self.faces.setdefault((cell, d), base)
+                cols = self.split.get((cell, d))
+                squares = ([(0, 0, 0, cols[0]), (1, 0, 1, cols[1]), (0, 1, 2, cols[2]), (1, 1, 3, cols[3])]
+                           if cols else [(None, None, None, base)])
                 k = SHADE[d] * (1.0 + (hash01(*cell, 9) - 0.5) * 2 * NOISE)
-                for fu, fv, size, covered, rgb, level, group in self._squares((cell, d)):
+                for su, sv, sub, rgb in squares:
+                    size = 2 if su is None else 1
+                    u0 = 2 * cell[ua] + (0 if su is None else su)
+                    v0 = 2 * cell[va] + (0 if sv is None else sv)
                     corners = []
                     for du, dv in ((0, 0), (1, 0), (1, 1), (0, 1)):
                         p = [0, 0, 0]
-                        p[ax] = planeF
-                        p[ua] = FINE * cell[ua] + fu + du * size
-                        p[va] = FINE * cell[va] + fv + dv * size
+                        p[ax] = plane2
+                        p[ua] = u0 + du * size
+                        p[va] = v0 + dv * size
                         corners.append(tuple(p))
-                    pts = [Vector(((p[0] / FINE + off[0]) * v, (p[1] / FINE + off[1]) * v, (p[2] / FINE + off[2]) * v))
+                    pts = [Vector(((p[0] / 2 + off[0]) * v, (p[1] / 2 + off[1]) * v, (p[2] / 2 + off[2]) * v))
                            for p in corners]
                     if (pts[1] - pts[0]).cross(pts[2] - pts[0]).dot(Vector(d)) < 0:
                         corners.reverse()
                         pts.reverse()
                     ids = []
                     for kk, p in zip(corners, pts):
-                        vkey = (cell, kk)
-                        if vkey not in vidx:
-                            vidx[vkey] = len(verts)
+                        key = (cell, kk)
+                        if key not in vidx:
+                            vidx[key] = len(verts)
                             verts.append(p)
-                        ids.append(vidx[vkey])
+                        ids.append(vidx[key])
                     polys.append(ids)
                     view = tuple(min(1.0, c * k) for c in rgb)
                     cols_b.append(tuple(to_linear(c) for c in rgb))
                     cols_v.append(tuple(to_linear(c) for c in view))
-                    keys.append((cell, d) if level == 0 else (cell, d, covered))
-                    levels.append(level)
-                    groups.append(group)
+                    keys.append((cell, d) if sub is None else (cell, d, sub))
         old = ob.data
         me = bpy.data.meshes.new(old.name)
         me.from_pydata(verts, [], polys)
@@ -348,13 +278,10 @@ class Solid:
         av.data.foreach_set("color", flat_v)
         me.color_attributes.active_color = av
         me.color_attributes.render_color_index = me.color_attributes.find(VIEW)
-        me.attributes.new(LEVEL, 'INT', 'FACE').data.foreach_set("value", levels)
-        me.attributes.new(GROUP, 'INT', 'FACE').data.foreach_set("value", groups)
         # Edit mode reads the selection from the corners, so corners, edges and faces are all set:
-        # only the given keys (none by default) come up picked. A plain (cell, dir) key picks every
-        # square of that side.
+        # only the given faces (none by default) come up picked.
         sel = set(select)
-        whole = {k[:2] for k in sel if len(k) == 2}
+        whole = {k[:2] for k in sel if len(k) == 2}       # a whole side picked: all its squares too
         fsel = [k in sel or k[:2] in whole for k in keys]
         me.vertices.foreach_set("select", [False] * len(me.vertices))
         me.edges.foreach_set("select", [False] * len(me.edges))
@@ -377,26 +304,27 @@ class Solid:
         return len(polys)
 
     def key_of(self, poly):
-        """(cell, dir) of a plain side, or (cell, dir, fine squares) of a split side's square. A small
-        square inside a level-1 quarter stands for its whole quarter."""
-        me = self.ob.data
-        cell, d, covered, size, level = self._place(me, poly)
-        if level == 0:
-            return (cell, d)
-        if level == 1 and size == 1:
-            covered = _quarter_of(covered[0])
-        return (cell, d, covered)
+        """(cell, dir), or (cell, dir, square) for a split side's square, of one mesh face."""
+        d = _dir_of(poly.normal)
+        centre = poly.center - Vector(d) * (0.5 * self.v)
+        cell = tuple(math.floor(c) for c in self.grid(centre))
+        if poly.area < 0.5 * self.v * self.v:
+            return (cell, d, self._sub_of(poly.center, cell, d))
+        return (cell, d)
 
     def selected_keys(self):
-        """The key (see key_of) of every picked face, each once."""
+        """(cell, dir) of every selected face, or (cell, dir, square) for a split side's square."""
+        me = self.ob.data
         out = []
-        seen = set()
-        for poly in self.ob.data.polygons:
+        for poly in me.polygons:
             if poly.select and len(poly.vertices) == 4:
-                k = self.key_of(poly)
-                if k not in seen:
-                    seen.add(k)
-                    out.append(k)
+                d = _dir_of(poly.normal)
+                centre = poly.center - Vector(d) * (0.5 * self.v)
+                cell = tuple(math.floor(c) for c in self.grid(centre))
+                if poly.area < 0.5 * self.v * self.v:
+                    out.append((cell, d, self._sub_of(poly.center, cell, d)))
+                else:
+                    out.append((cell, d))
         return out
 
 
@@ -469,28 +397,15 @@ def paint(ob, voxel_m, keys, rgb, whole_cubes, select=None):
 
 
 def split(ob, voxel_m, keys, whole_cubes):
-    """C: every picked side (or every outside side of a picked cube) goes one step finer: plain -> 4
-    squares -> 16 -> back to 4, keeping every colour painted at 16. The cube keeps its size: this is
-    detail on the surface, so the one-cube-size rule still holds."""
+    """C: every picked side (or every outside side of a picked cube) becomes four smaller squares
+    that can be picked and painted on their own, for cracks, wear and fine lines. The cube keeps
+    its size: this is detail on the surface, so the one-cube-size rule still holds."""
     s = Solid(ob, voxel_m)
-    sides = set()
+    picked = []
     for k in keys:
-        for d in (s.exposed(k[0]) if whole_cubes else [k[1]]):
-            sides.add((k[0], d))
-    for cell, d in sides:
-        s.cycle_split(cell, d)
-    s.write(list(sides))
-    return len(sides)
-
-
-def join(ob, voxel_m, keys, whole_cubes):
-    """Shift + C: every picked side (or every side of a picked cube) becomes one square again."""
-    s = Solid(ob, voxel_m)
-    sides = set()
-    for k in keys:
-        for d in (s.exposed(k[0]) if whole_cubes else [k[1]]):
-            sides.add((k[0], d))
-    for cell, d in sides:
-        s.join(cell, d)
-    s.write(list(sides))
-    return len(sides)
+        cell = k[0]
+        for d in (s.exposed(cell) if whole_cubes else [k[1]]):
+            s.split_face(cell, d)
+            picked += [(cell, d, i) for i in range(4)]
+    s.write(picked)
+    return len(picked) // 4
