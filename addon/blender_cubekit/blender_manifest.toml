@@ -1,0 +1,14 @@
+schema_version = "1.0.0"
+id = "blender_cubekit"
+version = "0.1.0"
+name = "CubeKit"
+tagline = "Pixel-style cube models: pick any cube, colours on, pick-mode copies"
+maintainer = "TefMeister"
+type = "add-on"
+blender_version_min = "4.2.0"
+license = ["SPDX:MIT"]
+website = "https://github.com/TefMeister/blender-cubekit"
+tags = ["Modeling"]
+
+[permissions]
+files = "Saves a _pick copy of the open .blend file beside it"
