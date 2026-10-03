@@ -46,18 +46,20 @@ the full repo is only needed to build models.
 
 ## The keys
 
-- **Hover a cube, press L**: picks exactly that cube (from object mode it enters edit mode for you).
-- In edit mode: **left mouse** is a picking brush (the **wheel** sizes it), **right mouse** held
-  un-picks, **F** switches between sides and whole cubes, **E** adds a cube, **Q** removes one,
-  **R** puts the whole model in view, **C** splits a picked side into four smaller squares for
-  cracks, wear and fine lines.
-- **Painting:** press **N**, open the **CubeKit** tab, scroll to **colours**, pick cubes, then click a
-  colour square. Or hover a cube and press **1** to **0** to paint it with that key's colour. [Step by step](docs/HOTKEYS.md#painting-cubes-with-the-palette).
+- **Hover a cube, press L**: picks exactly that cube (from object mode it goes into edit mode for
+  you). **Tab** goes in and out of editing, with nothing picked.
+- **In edit mode:** the **left mouse** is a picking brush, **Ctrl + wheel** sizes it, the **right
+  mouse** held un-picks, **F** switches between whole cubes and single sides, **E** adds a cube,
+  **Q** digs one out, **C** splits a side into 4 and then 16 squares for cracks, wear and fine lines,
+  **Shift + C** joins it back, **R** puts the whole model in view.
+- **Painting:** in the **CubeKit** tab's **colours** box, click a colour square to paint what is
+  picked, or hover a cube and press **1** to **0**. Colours can be added, changed and removed.
+- **Cube size:** buttons at the top of the tab make this file's cubes finer (each cube into 8) or
+  back again.
 - **Moving around is always on**, like a game: **W A S D** move, **Z** down, **X** up, **Shift**
-  faster, **middle mouse** held turns your head. **Ctrl + wheel** sizes the picking brush.
-- **Tab**: back out.
+  faster, **middle mouse** held turns your head.
 
-Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
+Every button and key, with what Blender's own keys moved to: [docs/HOTKEYS.md](docs/HOTKEYS.md).
 
 ## The rules
 

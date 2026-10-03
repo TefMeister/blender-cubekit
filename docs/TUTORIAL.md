@@ -31,22 +31,29 @@ Look at the picture first. That is the model as the game would show it: flat col
 
 ## Step 2: open it and look around
 
-Open `mug.blend` in Blender. If the mug looks grey, press **N** for the sidebar, open the
-**CubeKit** tab and click **Colours on**. Turn the view with the middle mouse button, zoom with the
-wheel, **Numpad 1 / 3 / 7** for front, side and top.
+Open `mug.blend` in Blender. If the mug looks grey, press **N** for the side panel, open the
+**CubeKit** tab and click **Colours on**. Move around like in a game: **W A S D** to move, **Z** down,
+**X** up, hold the **middle mouse** to look around, the **wheel** to zoom, **R** (in edit mode) to see
+the whole model.
 
 ## Step 3: pick a cube
 
 Click **Every cube on its own**, then hover the mouse over any cube and press **L**. One cube turns
-orange: that is the picked cube. **Tab** leaves edit mode. Click **Save pick copy** if you want to keep
+orange: that is the picked cube. In edit mode the **left mouse** picks more (hold and sweep), the
+**right mouse** held un-picks, **Ctrl + wheel** sizes the brush, **Alt + A** un-picks everything and
+**F** switches between whole cubes and single sides. **Tab** leaves edit mode. Click **Save pick copy** if you want to keep
 this cut-up version to come back to; it is saved as `mug_pick.blend`, the original stays as built.
 
 ## Step 3b: paint a cube
 
-Still in edit mode, press **N** if the side panel is hidden and open the **CubeKit** tab. Scroll down
-to the **colours** box, pick a cube or two with the left mouse, and click the **brush button** next to
-a colour: the picked cubes take it. **F** switches between painting one side and the whole cube. The
-full guide is in [HOTKEYS.md](HOTKEYS.md), under "Painting cubes with the palette".
+Still in edit mode, open the **CubeKit** tab and scroll down to the **colours** box. Pick a cube or
+two with the left mouse and click a colour square: the picked cubes take it. Or hover a cube and press
+**1** to paint it with key 1's colour (black, to start with). **F** switches between painting one side
+and the whole cube.
+
+For finer detail, pick a side and press **C**: it splits into 4 squares, **C** again makes 16, each
+painted on its own. **E** adds a cube on a picked side, **Q** digs one out. Everything is in
+[HOTKEYS.md](HOTKEYS.md).
 
 ## Step 4: change something
 
