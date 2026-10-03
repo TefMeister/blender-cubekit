@@ -39,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 7, 0),
+    "version": (0, 8, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -63,15 +63,39 @@ navigate = _il.reload(navigate)
 palette = _il.reload(palette)
 
 
+from . import project   # noqa: E402  the project's cube size and tier
+project = _il.reload(project)
+
+
+def _project():
+    """(project file or None, start mm, tier, design metres, edit metres)."""
+    import importlib
+    import cube_size
+    importlib.reload(cube_size)
+    path = project.find(bpy.data.filepath)
+    start, tier = project.read(path, cube_size.CUBE_MM)
+    return path, start, tier, start / 1000.0, project.size_mm(start, tier) / 1000.0
+
+
 def _kit():
+    """(bl, edit, the project's cube size in metres right now)."""
     import importlib
     import bl
     import edit
-    import cube_size
     importlib.reload(bl)
     importlib.reload(edit)
-    importlib.reload(cube_size)
-    return bl, edit, cube_size.VOXEL_M
+    return bl, edit, _project()[4]
+
+
+def _match_size(objects):
+    """Bring cube-edit objects to the project's cube size (finer only). Returns how many changed."""
+    _, edit, V = _kit()
+    design = _project()[3]
+    changed = 0
+    for ob in objects:
+        if ob.type == 'MESH' and edit.has_colours(ob) and edit.ensure_size(ob, V, design):
+            changed += 1
+    return changed
 
 
 def _view3d_spaces(context):
@@ -112,7 +136,8 @@ every mesh when nothing is selected"""
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        bl, edit, V = _kit()
+        bl, edit, _ = _kit()
+        V = _project()[3]                       # game files are built on the start grid
         if context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         obs = [o for o in getattr(context, 'selected_objects', None) or [] if o.type == 'MESH']
@@ -125,6 +150,7 @@ every mesh when nothing is selected"""
             if not bl.pick_mode_check(ob, V):
                 bl.split_to_cubes(ob, V)
             edit.convert(ob, V)
+            _match_size([ob])
             done += 1
         try:
             bpy.ops.cubekit.colours_on()
@@ -397,6 +423,8 @@ class CUBEKIT_OT_tab(bpy.types.Operator):
         ob = context.active_object
         if not ob or ob.type != 'MESH':
             return bpy.ops.object.editmode_toggle()
+        if _match_size([o for o in context.selected_objects if o.type == 'MESH'] or [ob]):
+            self.report({'INFO'}, "cubes made finer to match the project's size")
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type='FACE')
         bpy.ops.mesh.select_all(action='DESELECT')
@@ -438,6 +466,9 @@ def _for_each_edited(context, fn):
         return 0
     bpy.ops.object.mode_set(mode='OBJECT')
     touched = 0
+    if _match_size(obs):                        # made finer just now: what was picked is gone
+        bpy.ops.object.mode_set(mode='EDIT')
+        return 0
     for ob in obs:
         if not edit.has_colours(ob):
             continue
@@ -518,6 +549,36 @@ in its most common colour"""
         return {'FINISHED'}
 
 
+class CUBEKIT_OT_finer(bpy.types.Operator):
+    """Make the WHOLE project's cubes one step finer: every cube becomes 8 cubes of half the size,
+in the same colours. Only finer is possible, never bigger. The open models change now; the
+project's other models change the next time they are opened for editing"""
+    bl_idname = "cubekit.finer"
+    bl_label = "Finer cubes, whole project"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def execute(self, context):
+        if not bpy.data.filepath:
+            self.report({'ERROR'}, "save the file first, so the project can be found")
+            return {'CANCELLED'}
+        path, start, tier, _, _ = _project()
+        if project.size_mm(start, tier + 1) < project.MIN_MM:
+            self.report({'WARNING'}, "already as fine as it goes")
+            return {'CANCELLED'}
+        if path is None:
+            path = os.path.join(project.home_for(bpy.data.filepath), project.FILE)
+        project.write(path, start, tier + 1)
+        if context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        n = _match_size([o for o in bpy.data.objects if o.type == 'MESH'])
+        self.report({'INFO'}, "cubes are now %.3g mm: %d model part(s) converted, 1 cube = %d"
+                    % (project.size_mm(start, tier + 1), n, 8 ** (tier + 1)))
+        return {'FINISHED'}
+
+
 # ---------------------------------------------------------------- the panel
 
 class CUBEKIT_PT_panel(bpy.types.Panel):
@@ -531,10 +592,11 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         lay = self.layout
         col = lay.column(align=True)
         try:
-            _, _, V = _kit()
-            col.label(text="cube size: %.1f mm" % (V * 1000))
+            _path, start, tier, _, V = _project()
+            col.label(text="cube size: %.3g mm" % (V * 1000) + ("  (start %.3g, finer x%d)" % (start, tier) if tier else ""))
         except Exception:
             col.label(text="cube size: (kit not found)", icon='ERROR')
+        col.operator("cubekit.finer", text="Finer cubes, whole project (1 = 8)", icon='MOD_REMESH')
         col.operator("cubekit.colours_on", icon='SHADING_TEXTURE')
         col.operator("cubekit.pick_mode", icon='MESH_CUBE')
         col.operator("cubekit.save_pick_copy", icon='FILE_TICK')
@@ -567,7 +629,8 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 
 CLASSES = (CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
            CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
-           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_PT_panel)
+           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_OT_finer,
+           CUBEKIT_PT_panel)
 _keys = []
 _walk_moved = []          # (keymap item, old key) for the walk mode's Tab, put back on unregister
 GRAVITY_KEY = 'F12'       # where walk mode's "falling" switch goes: a key nobody presses while walking
