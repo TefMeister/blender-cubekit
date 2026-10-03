@@ -20,8 +20,9 @@
 #   E                        add a cube outside every picked side; E E E builds a row
 #   Q                        remove the cube behind every picked side (Q Q Q digs a row); with whole
 #                            cubes picked, removes those cubes
-#   C                        split the picked sides (or cubes' sides) into 4 smaller squares, to
-#                            pick and paint on their own: cracks, wear, fine lines
+#   C                        split the picked sides (or cubes' sides) finer: plain -> 4 -> 16 ->
+#                            4 -> 16 ..., colours painted at 16 are kept at 4: cracks, wear, lines
+#   Shift + C                join a split side back into one
 #   R                        the whole model in view
 #   Ctrl + wheel             brush circle bigger / smaller (the circle follows the mouse)
 #   F5 / F6                  Blender's plain click-select / the edit-mesh menu (the old mouse jobs)
@@ -38,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 6, 5),
+    "version": (0, 7, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -205,6 +206,58 @@ def _whole_cubes_of_selection(context, deselect_hits=None):
         bmesh.update_edit_mesh(ob.data, loop_triangles=False, destructive=False)
 
 
+def _expand_groups(context):
+    """Sides mode: a small square inside a 4-way split quarter that holds 16-way detail stands for
+    its whole quarter, so picking one picks all four (and un-picking one un-picks all four)."""
+    import bmesh
+    for ob in _edit_objects(context):
+        bm = bmesh.from_edit_mesh(ob.data)
+        layer = bm.faces.layers.int.get("cubekit_group")
+        if layer is None:
+            continue
+        on, off = set(), set()
+        for f in bm.faces:
+            g = f[layer]
+            if g > 0:
+                (on if f.select else off).add(g)
+        mixed = on & off
+        if not mixed:
+            continue
+        for f in bm.faces:
+            if f[layer] in mixed:
+                f.select = True
+        bm.select_flush(True)
+        bmesh.update_edit_mesh(ob.data, loop_triangles=False, destructive=False)
+
+
+def _shrink_groups(context, before):
+    """Un-picking: when one small square of a quarter was un-picked, un-pick the whole quarter."""
+    import bmesh
+    for ob in _edit_objects(context):
+        bm = bmesh.from_edit_mesh(ob.data)
+        layer = bm.faces.layers.int.get("cubekit_group")
+        if layer is None:
+            continue
+        was = before.get(ob.name, set())
+        dropped = {f[layer] for f in bm.faces if f[layer] > 0 and not f.select and f.index in was}
+        if not dropped:
+            continue
+        for f in bm.faces:
+            if f[layer] in dropped:
+                f.select = False
+        bm.select_flush(False)
+        bmesh.update_edit_mesh(ob.data, loop_triangles=False, destructive=False)
+
+
+def _picked_faces(context):
+    import bmesh
+    out = {}
+    for ob in _edit_objects(context):
+        bm = bmesh.from_edit_mesh(ob.data)
+        out[ob.name] = {f.index for f in bm.faces if f.select}
+    return out
+
+
 def _draw_circle(self, context):
     import gpu
     from gpu_extras.batch import batch_for_shader
@@ -240,8 +293,14 @@ to pick more; the wheel while holding changes the brush size. Right mouse: the s
             for o in _edit_objects(context):
                 bm = bmesh.from_edit_mesh(o.data)
                 before[o.name] = {f.index for f in bm.faces if f.select}
+        sides_before = _picked_faces(context) if not wm.cubekit_whole and self.mode == 'SUB' else None
         bpy.ops.view3d.select_circle(x=self._mouse[0], y=self._mouse[1], radius=r,
                                      wait_for_input=False, mode=self.mode)
+        if not wm.cubekit_whole:
+            if self.mode == 'ADD':
+                _expand_groups(context)
+            else:
+                _shrink_groups(context, sides_before)
         if wm.cubekit_whole:
             if self.mode == 'ADD':
                 _whole_cubes_of_selection(context)
@@ -297,8 +356,13 @@ to pick more; the wheel while holding changes the brush size. Right mouse: the s
                     else:
                         bpy.ops.mesh.select_linked_pick('INVOKE_DEFAULT', deselect=True)
                 else:
+                    before = _picked_faces(context)
                     bpy.ops.view3d.select(location=self._mouse, extend=(self.mode == 'ADD'),
                                           deselect=(self.mode == 'SUB'))
+                    if self.mode == 'ADD':
+                        _expand_groups(context)
+                    else:
+                        _shrink_groups(context, before)
             self._finish(context)
             return {'FINISHED'}
         elif event.type == 'ESC':
@@ -434,7 +498,23 @@ to pick and paint on their own - cracks, wear and fine lines. The cube keeps its
             return {'CANCELLED'}
         if whole:
             context.window_manager.cubekit_whole = False     # the squares are picked: paint them as sides
-        self.report({'INFO'}, "split into 4: pick a square and paint it")
+        self.report({'INFO'}, "C again: 4 <-> 16 squares. Shift + C joins back into one")
+        return {'FINISHED'}
+
+
+class CUBEKIT_OT_join(bpy.types.Operator):
+    """Shift + C: join the picked split sides (or a picked cube's split sides) back into one square,
+in its most common colour"""
+    bl_idname = "cubekit.join"
+    bl_label = "Join back into one"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        whole = context.window_manager.cubekit_whole
+        n = _for_each_edited(context, lambda edit, ob, V, keys: edit.join(ob, V, keys, whole))
+        if not n:
+            self.report({'WARNING'}, "nothing picked")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 
@@ -464,7 +544,9 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(wm, "cubekit_whole", text="whole cubes (F)" if wm.cubekit_whole else "sides only (F)", toggle=True)
         box.prop(wm, "cubekit_brush", text="brush size (Ctrl + wheel)")
-        box.operator("cubekit.split", text="Split into 4 (C)", icon='MESH_GRID')
+        row = box.row(align=True)
+        row.operator("cubekit.split", text="Split finer (C)", icon='MESH_GRID')
+        row.operator("cubekit.join", text="Join (Shift C)", icon='MESH_PLANE')
 
         box = lay.box()
         box.label(text="colours", icon='COLOR')
@@ -474,7 +556,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         col.label(text="object mode: hover a cube, L = pick")
         col.label(text="edit mode: left = pick, right = un-pick")
         col.label(text="E add / Q remove / F sides / R view")
-        col.label(text="C = split into 4 smaller squares")
+        col.label(text="C = split 4 / 16, Shift + C = join")
         col.label(text="Ctrl + wheel = brush size")
         col.label(text="WASD move, Z down, X up, middle mouse look")
         col.label(text="1-0 over a cube = paint it that key's colour")
@@ -485,7 +567,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 
 CLASSES = (CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
            CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
-           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_PT_panel)
+           CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_PT_panel)
 _keys = []
 _walk_moved = []          # (keymap item, old key) for the walk mode's Tab, put back on unregister
 GRAVITY_KEY = 'F12'       # where walk mode's "falling" switch goes: a key nobody presses while walking
@@ -526,6 +608,7 @@ def register():
         _bind(kc, "Mesh", "cubekit.shrink", 'Q')
         _bind(kc, "Mesh", "cubekit.view_all", 'R')
         _bind(kc, "Mesh", "cubekit.split", 'C')
+        _bind(kc, "Mesh", "cubekit.join", 'C', shift=True)
         _bind(kc, "Mesh", "view3d.select", 'F5')                                   # the old left mouse
         _bind(kc, "Mesh", "wm.call_menu", 'F6', name="VIEW3D_MT_edit_mesh_context_menu")   # the old right mouse
     try:
