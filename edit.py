@@ -121,6 +121,26 @@ class Solid:
             self._flood()
         for (cell, d), rgb in self.faces.items():
             self.cell_rgb.setdefault(cell, rgb)
+        self._colour_inside()
+
+    def _colour_inside(self):
+        """Cubes deep inside the model were never painted, so a hole dug into it showed plain grey
+        walls that looked like cubes had been ADDED (Tefa, 2026-10-03). Every unpainted cube takes the
+        colour of the nearest painted one, spreading inwards from the surface, so the material simply
+        carries on inside."""
+        if all(c in self.cell_rgb for c in self.cells):
+            return
+        frontier = [c for c in self.cells if c in self.cell_rgb]
+        while frontier:
+            nxt = []
+            for c in frontier:
+                rgb = self.cell_rgb[c]
+                for d in DIRS:
+                    n = (c[0] + d[0], c[1] + d[1], c[2] + d[2])
+                    if n in self.cells and n not in self.cell_rgb:
+                        self.cell_rgb[n] = rgb
+                        nxt.append(n)
+            frontier = nxt
 
     # ---- reading ----
     def grid(self, p):
