@@ -8,7 +8,8 @@
 #       hover a colour square and press a number   -> that number now means that colour
 #       hover a cube in edit mode and press it      -> paints the side under the mouse with it,
 #                                                      or the whole cube when F is on whole cubes
-#   - Ctrl + click on one of your own colours takes that square away
+#   - Change this colour / Remove this colour act on the last clicked square (orange outline), any
+#     square, Paint's too; Ctrl + click also removes a square
 # The number a colour carries is drawn in the corner of its square.
 import bpy
 import bpy.utils.previews
@@ -49,11 +50,19 @@ def _is_paint_layout(pal):
         abs(pal[i].color[j] - PAINT_COLOURS[i][j] / 255) < 1e-3 for i in range(PRESETS) for j in range(3))
 
 
+def _ready(scene):
+    """Set up once; after that every square is the user's to change or remove (2026-10-03)."""
+    return scene.cubekit_palette_ready and len(scene.cubekit_palette) > 0
+
+
 def ensure(scene):
     """Give the scene the Paint layout: Paint's 20 colours, then your own. Colours from an older
     palette become your own, so nothing is lost. Empty squares from 0.6.0 are dropped."""
     pal = scene.cubekit_palette
+    if _ready(scene):
+        return
     if _is_paint_layout(pal):
+        scene.cubekit_palette_ready = True
         for i in reversed(range(PRESETS, len(pal))):
             if not pal[i].used:
                 _remove(scene, i)
@@ -64,6 +73,7 @@ def ensure(scene):
         pal.add().color = tuple(c / 255 for c in rgb)
     for rgb in old:
         pal.add().color = rgb
+    scene.cubekit_palette_ready = True
     hk = scene.cubekit_hotkeys
     if all(h < 0 for h in hk):
         for i in range(10):               # 1 to 0 start as Paint's top row
@@ -127,7 +137,7 @@ def _icon(rgb, used, number, active):
 
 def draw(layout, context):
     scene = context.scene
-    if not _is_paint_layout(scene.cubekit_palette):
+    if not _ready(scene):
         layout.operator("cubekit.palette_setup", icon='COLOR')
         return
     pal = scene.cubekit_palette
@@ -156,6 +166,9 @@ def draw(layout, context):
             else:
                 cell.label(text="")
     layout.operator("cubekit.palette_add", text="Add to my colours", icon='ADD')
+    row = layout.row(align=True)
+    row.operator("cubekit.palette_change", text="Change this colour", icon='EYEDROPPER')
+    row.operator("cubekit.palette_remove", text="Remove this colour", icon='X')
 
 
 # ---- operators ----
@@ -176,7 +189,7 @@ class CUBEKIT_OT_apply_colour(bpy.types.Operator):
     @classmethod
     def description(cls, context, props):
         n = _number_of(context.scene, props.index)
-        own = props.index >= PRESETS
+        own = True
         return ("Click: paint the picked sides (or cubes) with this colour"
                 + ("; key %s" % n if n else "") + ". Hover and press 1-0 to give it a key"
                 + (". Ctrl + click: take this square away" if own else ""))
@@ -187,7 +200,7 @@ class CUBEKIT_OT_apply_colour(bpy.types.Operator):
         if not (0 <= self.index < len(pal)):
             return {'CANCELLED'}
         item = pal[self.index]
-        if self.index >= PRESETS and event.ctrl:
+        if event.ctrl:
             _remove(scene, self.index)
             return {'FINISHED'}
         scene.cubekit_active = self.index
@@ -296,7 +309,46 @@ with the colour that has this number"""
         return {'FINISHED'}
 
 
+class CUBEKIT_OT_palette_change(bpy.types.Operator):
+    """Give the last clicked square (orange outline) the colour in the big square"""
+    bl_idname = "cubekit.palette_change"
+    bl_label = "Change this colour"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        scene = context.scene
+        i = scene.cubekit_active
+        if not (0 <= i < len(scene.cubekit_palette)):
+            return {'CANCELLED'}
+        scene.cubekit_palette[i].color = scene.cubekit_mix
+        for area in context.screen.areas:
+            area.tag_redraw()
+        return {'FINISHED'}
+
+
+class CUBEKIT_OT_palette_remove(bpy.types.Operator):
+    """Take the last clicked square (orange outline) away"""
+    bl_idname = "cubekit.palette_remove"
+    bl_label = "Remove this colour"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        scene = context.scene
+        i = scene.cubekit_active
+        if not (0 <= i < len(scene.cubekit_palette)):
+            return {'CANCELLED'}
+        if len(scene.cubekit_palette) <= 1:
+            self.report({'WARNING'}, "the last colour stays")
+            return {'CANCELLED'}
+        _remove(scene, i)
+        scene.cubekit_active = min(i, len(scene.cubekit_palette) - 1)
+        for area in context.screen.areas:
+            area.tag_redraw()
+        return {'FINISHED'}
+
+
 CLASSES = (CubeKitColour, CUBEKIT_OT_apply_colour, CUBEKIT_OT_palette_add, CUBEKIT_OT_palette_setup,
+           CUBEKIT_OT_palette_change, CUBEKIT_OT_palette_remove,
            CUBEKIT_OT_set_hotkey, CUBEKIT_OT_paint_hover)
 
 
@@ -316,6 +368,7 @@ def register():
     bpy.types.Scene.cubekit_palette = bpy.props.CollectionProperty(type=CubeKitColour)
     bpy.types.Scene.cubekit_hotkeys = bpy.props.IntVectorProperty(size=10, default=[-1] * 10)
     bpy.types.Scene.cubekit_active = bpy.props.IntProperty(default=0, min=0)
+    bpy.types.Scene.cubekit_palette_ready = bpy.props.BoolProperty(default=False)
     bpy.types.Scene.cubekit_mix = bpy.props.FloatVectorProperty(
         name="mixer", subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.5, 0.5, 0.5),
         description="The colour in hand: click a colour to put it here, fine-tune it, then Add to my colours")
@@ -330,7 +383,7 @@ def unregister():
     if _icons["coll"]:
         bpy.utils.previews.remove(_icons["coll"])
         _icons["coll"] = None
-    for name in ("cubekit_palette", "cubekit_hotkeys", "cubekit_active", "cubekit_mix"):
+    for name in ("cubekit_palette", "cubekit_hotkeys", "cubekit_active", "cubekit_mix", "cubekit_palette_ready"):
         delattr(bpy.types.Scene, name)
     for c in reversed(CLASSES):
         bpy.utils.unregister_class(c)
