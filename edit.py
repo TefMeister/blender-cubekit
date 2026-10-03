@@ -303,6 +303,15 @@ class Solid:
         ob["cubekit_cell_rgb"] = rgbs
         return len(polys)
 
+    def key_of(self, poly):
+        """(cell, dir), or (cell, dir, square) for a split side's square, of one mesh face."""
+        d = _dir_of(poly.normal)
+        centre = poly.center - Vector(d) * (0.5 * self.v)
+        cell = tuple(math.floor(c) for c in self.grid(centre))
+        if poly.area < 0.5 * self.v * self.v:
+            return (cell, d, self._sub_of(poly.center, cell, d))
+        return (cell, d)
+
     def selected_keys(self):
         """(cell, dir) of every selected face, or (cell, dir, square) for a split side's square."""
         me = self.ob.data
@@ -374,8 +383,9 @@ def remove_cubes(ob, voxel_m, keys):
     s.write()
 
 
-def paint(ob, voxel_m, keys, rgb, whole_cubes):
-    """A palette click: the picked sides (or whole cubes) take the colour."""
+def paint(ob, voxel_m, keys, rgb, whole_cubes, select=None):
+    """A palette click: the picked sides (or whole cubes) take the colour. select: what stays
+    picked afterwards (default: the painted faces)."""
     s = Solid(ob, voxel_m)
     if whole_cubes:
         for k in keys:
@@ -383,7 +393,7 @@ def paint(ob, voxel_m, keys, rgb, whole_cubes):
     else:
         for k in keys:
             s.paint_face(k[0], k[1], rgb, k[2] if len(k) == 3 else None)
-    s.write(keys)
+    s.write(keys if select is None else select)
 
 
 def split(ob, voxel_m, keys, whole_cubes):
