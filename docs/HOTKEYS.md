@@ -17,6 +17,23 @@ the sidebar if it is hidden).
 
 The tab also shows the project's cube size, read from `cube_size.py`.
 
+## Painting cubes with the palette
+
+The palette lives in the **CubeKit** tab, on the right side of the 3D view.
+
+1. With the mouse over the 3D view, press **N** if the side panel is hidden.
+2. Click the **CubeKit** tab on the panel's right edge.
+3. Scroll down to the **colours** box.
+
+To paint:
+
+1. Press **Tab** and pick cubes with the left mouse (**F** chooses sides only or whole cubes).
+2. Click the **brush button** next to a colour. The picked sides or cubes take that colour.
+
+Click a colour swatch itself to change that colour. **+** at the top of the box adds a colour (it
+copies the picked side's colour when something is picked); **x** removes one. The palette is saved
+with the file. Ctrl+Z undoes a paint.
+
 ## Keys the add-on adds
 
 Object mode (before Tab):

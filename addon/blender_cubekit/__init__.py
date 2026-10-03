@@ -35,7 +35,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 4, 0),
+    "version": (0, 4, 1),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -513,6 +513,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         row.label(text="colours", icon='COLOR')
         row.operator("cubekit.palette_add", text="", icon='ADD')
         pal = context.scene.cubekit_palette
+        box.label(text="pick cubes, then click a brush button")
         if not pal:
             box.label(text="press + to add one")
         for i, item in enumerate(pal):
