@@ -20,7 +20,11 @@
 #   Q                        remove the cube behind every picked side (Q Q Q digs a row); with whole
 #                            cubes picked, removes those cubes
 #   R                        the whole model in view
+#   Ctrl + wheel             brush circle bigger / smaller (the circle follows the mouse)
 #   F5 / F6                  Blender's plain click-select / the edit-mesh menu (the old mouse jobs)
+# Movement, always on, every mode (navigate.py): W A S D move, Z down, X up, Shift faster, middle
+# mouse held turns your head. What those keys did before: F7 pick all, F8 scale, F9 shading wheel,
+# F10 Blender's orbit, Delete key deletes.
 #   Tab                      back out of edit mode
 import math
 import os
@@ -31,7 +35,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 3, 1),
+    "version": (0, 4, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -44,6 +48,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 for _p in (_HERE, os.path.abspath(os.path.join(_HERE, "..", ".."))):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+
+from . import navigate  # noqa: E402  W A S D movement, the hover circle, Ctrl + wheel
 
 
 def _kit():
@@ -320,6 +327,10 @@ class CUBEKIT_OT_tab(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type='FACE')
         bpy.ops.mesh.select_all(action='DESELECT')
+        try:
+            bpy.ops.cubekit.hover('INVOKE_DEFAULT')
+        except Exception:
+            pass
         return {'FINISHED'}
 
 
@@ -514,6 +525,8 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         col.label(text="object mode: hover a cube, L = pick")
         col.label(text="edit mode: left = pick, right = un-pick")
         col.label(text="E add / Q remove / F sides / R view")
+        col.label(text="Ctrl + wheel = brush size")
+        col.label(text="WASD move, Z down, X up, middle mouse look")
         col.label(text="F5 / F6 = the old left / right mouse")
 
 
@@ -550,8 +563,10 @@ def register():
     bpy.types.WindowManager.cubekit_brush = bpy.props.IntProperty(
         name="brush size", default=18, min=2, max=300, description="Brush radius in pixels; the wheel changes it while picking")
     bpy.types.Scene.cubekit_palette = bpy.props.CollectionProperty(type=CubeKitColour)
+    navigate.register()
     kc = bpy.context.window_manager.keyconfigs.addon
     if kc:
+        navigate.bind(kc, _keys)
         _bind(kc, "Object Mode", "cubekit.pick_cube", 'L')
         _bind(kc, "Object Mode", "cubekit.tab", 'TAB')
         _bind(kc, "Mesh", "cubekit.tab", 'TAB')
@@ -593,6 +608,7 @@ def unregister():
         except Exception:
             pass
     _walk_moved.clear()
+    navigate.unregister()
     del bpy.types.WindowManager.cubekit_whole
     del bpy.types.WindowManager.cubekit_brush
     del bpy.types.Scene.cubekit_palette

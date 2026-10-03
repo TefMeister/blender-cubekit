@@ -26,7 +26,30 @@ Object mode (before Tab):
 | **L** (mouse over a cube) | Picks exactly that cube: selects the object, enters edit mode, selects the one cube under the mouse. |
 | **Tab** | Into cube editing with **nothing picked**, so the cubes show and can be picked. Tab again comes out. |
 
-Blender's walk mode (Shift + the key left of 1) normally turns on falling with **Tab**. The add-on moves that to **F12**, and walking starts with falling off.
+## Moving around: always on, in every mode
+
+No mode to switch on: the 3D view moves like a game (asked for on 2026-10-03).
+
+| Key | What it does |
+| --- | --- |
+| **W A S D** | Move forward, left, back, right, the way you are facing. |
+| **Z / X** | Lower / raise. |
+| **Shift** | Faster, while held. |
+| **Middle mouse** held | Turn your head: look around from where you stand. |
+| **Wheel** | Blender's own zoom. |
+
+Those keys did other jobs in Blender before; they are now here:
+
+| Key | What it does now | What used to do it |
+| --- | --- | --- |
+| **F7** | Pick everything / nothing | A |
+| **F8** | Scale | S |
+| **F9** | The shading wheel | Z |
+| **F10** | Blender's spin-the-model view (hold and move the mouse) | middle mouse |
+| **Delete** | Delete | X (Delete already did it) |
+
+Blender's own walk mode (Shift + the key left of 1) is not needed any more. Its Tab switch for
+falling is moved to **F12**, and it starts with falling off.
 
 Edit mode (after Tab), asked for on 2026-10-03:
 
@@ -38,6 +61,7 @@ Edit mode (after Tab), asked for on 2026-10-03:
 | **E** | Adds a cube outside every picked side, in that side's colour. The new cube's outer side becomes the picked one, so **E E E** builds a row of three. Needs sides picked, so it knows which way. |
 | **Q** | Removes the cube behind every picked side; the next cube inward becomes picked, so **Q Q** digs two deep. With whole cubes picked, removes those cubes. |
 | **R** | The whole model in view, at a sensible distance. |
+| **Ctrl + wheel** | Brush circle bigger or smaller. The circle follows the mouse in edit mode, so its size is always visible. |
 | **F5** | What the left mouse did before: Blender's plain click-select. |
 | **F6** | What the right mouse did before: the edit-mesh menu. |
 | **Space** | Blender's own: play and stop the animation. |
