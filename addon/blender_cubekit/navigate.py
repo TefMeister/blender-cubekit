@@ -15,7 +15,7 @@ import math
 import bpy
 from mathutils import Quaternion, Vector
 
-MOVE_SPEED = 0.30          # metres per second; a hand-held model is under a metre long
+MOVE_SPEED = 0.30          # metres per second; a hand-held model is under a metre long. Approved by Tefa 2026-10-03
 FAST = 3.0                 # Shift multiplies the speed by this
 TICK = 1 / 60              # how often the view is moved, seconds
 LOOK_DEG_PER_PX = 0.25     # middle-mouse look: degrees turned per pixel of mouse movement
