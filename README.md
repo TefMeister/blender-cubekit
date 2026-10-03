@@ -50,6 +50,8 @@ the full repo is only needed to build models.
 - In edit mode: **left mouse** is a picking brush (the **wheel** sizes it), **right mouse** held
   un-picks, **F** switches between sides and whole cubes, **E** adds a cube, **Q** removes one,
   **R** puts the whole model in view. A colour palette in the CubeKit tab paints what is picked.
+- **Moving around is always on**, like a game: **W A S D** move, **Z** down, **X** up, **Shift**
+  faster, **middle mouse** held turns your head. **Ctrl + wheel** sizes the picking brush.
 - **Tab**: back out.
 
 Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
@@ -69,7 +71,7 @@ Everything else is in [docs/HOTKEYS.md](docs/HOTKEYS.md).
 ## Where it stands
 
 - 2026-10-03: repo made from the shared kit folder. Pick mode and the add-on are new and have been
-  used on one animated weapon with hands. Add-on 0.3.0 adds cube editing: the picking brush,
+  used on one animated weapon with hands. Add-on 0.4.0 adds game-style movement, always on. 0.3.0 added cube editing: the picking brush,
   adding and removing cubes, and a colour palette. Edits live in the editing copy; turning an
   edited copy back into a game model is not built yet. The exporter covers GZDoom only.
 
