@@ -29,6 +29,10 @@ HELP = [
         ("Shift + C", "join a split side back into one"),
         ("CubeKit Build tab", "add or remove a typed number"),
         ("Count between", "cubes between 2 picked sides (Build tab)"),
+        ("Alt + arrows", "move picked cubes left / right / away / towards"),
+        ("Alt + Page Up / Down", "move picked cubes up / down"),
+        ("Make a moving part", "picked cubes become a part (Build tab)"),
+        ("Pose a part", "Tab out, click it, R to turn, I to keep"),
     ]),
     ("Painting", 'BRUSH_DATA', [
         ("Click a colour", "paint what is picked"),
@@ -197,6 +201,8 @@ class CUBEKIT_PT_build(bpy.types.Panel):
         row.scale_y = 1.5
         row.operator("cubekit.build", text="Add on top", icon='ADD').remove = False
         row.operator("cubekit.build", text="Remove inwards", icon='REMOVE').remove = True
+        from . import moves
+        moves.draw(lay, context)
         box = lay.box()
         box.label(text="count cubes between 2 picked sides", icon='DRIVER_DISTANCE')
         box.operator("cubekit.measure", icon='DRIVER_DISTANCE')
