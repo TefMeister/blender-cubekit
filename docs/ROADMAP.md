@@ -41,7 +41,7 @@ always covers the same eight 3.4 mm cubes.
      3.4 mm cubes every time, so big cubes always line up and up / down always round-trips; the
      picked cube can end up in any of the 8 corners. Recommended, with a **preview outline** under
      the mouse showing exactly where the bigger cube will land before anything changes.
-   Tefa to decide on Wednesday, ideally after seeing the preview idea.
+   ✅ **Tefa chose the fixed grid, with the preview outline** (2026-10-03: *"that sounds great"*).
 2. **Neighbours of different sizes** - a 3.4 mm side next to a 1.7 mm cube shows part of its face.
    That is fine for the look; the game export has to handle it too.
 3. **The game export** - edits in editing copies do not reach the game yet at all (a separate
