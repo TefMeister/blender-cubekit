@@ -41,6 +41,13 @@ Click **Every cube on its own**, then hover the mouse over any cube and press **
 orange: that is the picked cube. **Tab** leaves edit mode. Click **Save pick copy** if you want to keep
 this cut-up version to come back to; it is saved as `mug_pick.blend`, the original stays as built.
 
+## Step 3b: paint a cube
+
+Still in edit mode, press **N** if the side panel is hidden and open the **CubeKit** tab. Scroll down
+to the **colours** box, pick a cube or two with the left mouse, and click the **brush button** next to
+a colour: the picked cubes take it. **F** switches between painting one side and the whole cube. The
+full guide is in [HOTKEYS.md](HOTKEYS.md), under "Painting cubes with the palette".
+
 ## Step 4: change something
 
 Open `examples/mug/mug_settings.py` in any text editor. Every number has a name and a comment.
