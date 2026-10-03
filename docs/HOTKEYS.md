@@ -1,6 +1,6 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.12.0) adds to Blender. The add-on puts three tabs in the 3D
+Everything the CubeKit add-on (version 0.12.2) adds to Blender. The add-on puts three tabs in the 3D
 view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
@@ -25,7 +25,7 @@ the Ashes 2063 weapons). The lit button is this file's size.
 
 | Button | What it does |
 | --- | --- |
-| **Colours on** | Shows the model flat and unlit with its colours: exactly what the game shows. |
+| **Colours on** | Shows the model flat and unlit with its colours: exactly what the game shows. Also hides any wall seen from behind: a model is solid inside, but only its outer skin is drawn, so from inside the skin you would otherwise see (and could pick) the walls from the back. Tab turns this on too. |
 | **Every cube on its own** | Gets a model ready for cube editing: cuts merged strips back into single cubes and works out which cubes are solid inside, so cubes can be picked, added, removed and coloured. Works on the selected parts, or on everything when nothing is selected. |
 | **Save pick copy** | Saves the scene as `<name>_pick.blend` beside the open file. The original is what the game export reads, so it is never overwritten with the editing version. |
 
