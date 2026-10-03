@@ -24,7 +24,7 @@ Microsoft Paint's.
 
 1. With the mouse over the 3D view, press **N** if the side panel is hidden.
 2. Click the **CubeKit** tab on the panel's right edge.
-3. Scroll down to the **colours** box: two rows of Paint's colours, and a third row of your own.
+3. Scroll down to the **colours** box: two rows of Paint's colours, and your own underneath.
 
 **Click to paint.** Pick sides or cubes (Tab, left mouse), then click a colour square: they take
 that colour at once. **F** decides whether a side or the whole cube is painted.
@@ -37,10 +37,10 @@ that colour at once. **F** decides whether a side or the whole cube is painted.
   colour, or the whole cube when **F** is on whole cubes. Nothing needs to be picked first, and
   what is picked stays picked.
 
-**Your own colours.** The big square at the top is the last colour used; click it to fine-tune that
-colour. Mix a colour in the bar under the grid and press **Add to my colours**, or click an empty
-square in your row. **Ctrl + click** one of your own squares to empty it. The palette and the number
-keys are saved with the file. Ctrl+Z undoes a paint.
+**Your own colours.** The big square at the top is the colour in hand: clicking any colour puts it
+there, and clicking the big square lets you fine-tune it. **Add to my colours** puts it in a new square
+under the grid, so the palette grows downwards as you add. **Ctrl + click** one of your own squares to
+take it away. The palette and the number keys are saved with the file. Ctrl+Z undoes a paint.
 
 ## Keys the add-on adds
 
