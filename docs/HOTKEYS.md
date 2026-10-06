@@ -1,6 +1,6 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.16.0) adds to Blender. The add-on puts three tabs in the 3D
+Everything the CubeKit add-on (version 0.17.0) adds to Blender. The add-on puts three tabs in the 3D
 view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
@@ -116,6 +116,7 @@ up-down).
 | **F** | Sides only, or whole cubes. |
 | **L** (mouse over a cube) | Picks the whole block that cube belongs to: every cube joined to it side to side, in the same part. A loose plate or bit is picked on its own; a cube that is part of the main body picks the whole body. Adds to what is already picked (**Alt + A** clears first). The side you press **L** on becomes the glue side for copying. |
 | **Ctrl + C** | Copies the picked cubes with their colours. The **glue side** is the side under the mouse if it is one of the picked cubes; otherwise the side you last pressed **L** on. |
+| **Ctrl + X** | Cut: the same as **Ctrl + C**, and the picked cubes are taken away. **Ctrl + V** puts them where you point. |
 | **Ctrl + V** (mouse over a side) | Pastes the copy onto that side: it lands just outside it, turned so its glue side lies flat against it, so you know exactly where it ends up. Works on any part with the same cube size. The pasted cubes come up picked, so **Ctrl + Z** or **Q** removes them. |
 | **E** | Adds a cube outside every picked side, in that side's colour. The new cube's outer side becomes the picked one, so **E E E** builds a row of three. Needs sides picked, so it knows which way. |
 | **Q** | Removes the cube behind every picked side; the next cube inward becomes picked, so **Q Q** digs two deep. With whole cubes picked, removes those cubes. |
