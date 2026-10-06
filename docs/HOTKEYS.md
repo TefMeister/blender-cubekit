@@ -1,6 +1,6 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.14.0) adds to Blender. The add-on puts three tabs in the 3D
+Everything the CubeKit add-on (version 0.15.0) adds to Blender. The add-on puts three tabs in the 3D
 view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
@@ -114,6 +114,7 @@ up-down).
 | **Ctrl + wheel** | Brush circle bigger or smaller. (Turning the wheel while holding the left mouse does it too.) |
 | **Alt + A** | Un-pick everything (Blender's own). |
 | **F** | Sides only, or whole cubes. |
+| **L** (mouse over a cube) | Picks the whole block that cube belongs to: every cube joined to it side to side, in the same part. A loose plate or bit is picked on its own; a cube that is part of the main body picks the whole body. Adds to what is already picked (**Alt + A** clears first). |
 | **E** | Adds a cube outside every picked side, in that side's colour. The new cube's outer side becomes the picked one, so **E E E** builds a row of three. Needs sides picked, so it knows which way. |
 | **Q** | Removes the cube behind every picked side; the next cube inward becomes picked, so **Q Q** digs two deep. With whole cubes picked, removes those cubes. |
 | **C** | Split a side for fine detail: plain, then 4 squares, then 16, then back to 4, and so on. Each square is picked and painted on its own. Colours painted at 16 stay when you go back to 4: a quarter holding finer detail keeps showing it, and is picked and painted as one quarter. With whole cubes picked, every outside side of those cubes is split. The cube keeps its size. |

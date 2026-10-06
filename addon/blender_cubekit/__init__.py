@@ -39,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 14, 0),
+    "version": (0, 15, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -216,6 +216,84 @@ class CUBEKIT_OT_pick_cube(bpy.types.Operator):
             bpy.ops.mesh.select_mode(type='FACE')
             bpy.ops.mesh.select_all(action='DESELECT')
         return bpy.ops.mesh.select_linked_pick('INVOKE_DEFAULT', deselect=False)
+
+
+class CUBEKIT_OT_pick_block(bpy.types.Operator):
+    """Pick the whole block under the mouse: the cube there and every cube joined to it, side to
+side, inside the same part. A loose plate or bit picks on its own; a cube joined to the main body
+picks the whole body (Tefa, 2026-10-06)"""
+    bl_idname = "cubekit.pick_block"
+    bl_label = "Pick the whole block under the mouse"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def invoke(self, context, event):
+        import math
+        import bmesh
+        from bpy_extras import view3d_utils
+        from mathutils.bvhtree import BVHTree
+        region, rv3d = context.region, context.region_data
+        if rv3d is None:
+            return {'CANCELLED'}
+        co = (event.mouse_region_x, event.mouse_region_y)
+        origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, co)
+        ray = view3d_utils.region_2d_to_vector_3d(region, rv3d, co)
+        best = None
+        for ob in _edit_objects(context):
+            bm = bmesh.from_edit_mesh(ob.data)
+            bm.faces.ensure_lookup_table()
+            inv = ob.matrix_world.inverted()
+            o_l = inv @ origin
+            d_l = (inv.to_3x3() @ ray).normalized()
+            hit, _n, idx, _dist = BVHTree.FromBMesh(bm).ray_cast(o_l, d_l)
+            if hit is None:
+                continue
+            dist = (ob.matrix_world @ hit - origin).length
+            if best is None or dist < best[0]:
+                best = (dist, ob, idx)
+        if best is None:
+            self.report({'WARNING'}, "no cube under the mouse")
+            return {'CANCELLED'}
+        _d, ob, idx = best
+        v = ob.get("cubekit_voxel_m")
+        if not v:
+            self.report({'WARNING'}, "this part is not in pick mode yet")
+            return {'CANCELLED'}
+        off = list(ob.get("cubekit_off", (0.0, 0.0, 0.0)))
+        bm = bmesh.from_edit_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+
+        def cell_of(f):
+            n = f.normal
+            ax = max(range(3), key=lambda i: abs(n[i]))
+            c = f.calc_center_median()
+            c[ax] -= math.copysign(0.5 * v, n[ax])
+            return tuple(math.floor(c[i] / v - off[i]) for i in range(3))
+
+        faces_of = {}
+        for f in bm.faces:
+            faces_of.setdefault(cell_of(f), []).append(f)
+        flat = list(ob.get("cubekit_cells", ()))
+        cells = {tuple(flat[i:i + 3]) for i in range(0, len(flat), 3)} if flat else set(faces_of)
+        start = cell_of(bm.faces[idx])
+        if start not in cells:
+            cells.add(start)
+        block, stack = {start}, [start]
+        while stack:
+            c = stack.pop()
+            for dx, dy, dz in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)):
+                nb = (c[0] + dx, c[1] + dy, c[2] + dz)
+                if nb in cells and nb not in block:
+                    block.add(nb)
+                    stack.append(nb)
+        n = 0
+        for c in block:
+            for f in faces_of.get(c, ()):
+                f.select = True
+                n += 1
+        bm.select_flush(True)
+        bmesh.update_edit_mesh(ob.data, loop_triangles=False, destructive=False)
+        self.report({'INFO'}, "picked a block of %d cubes" % len(block))
+        return {'FINISHED'}
 
 
 def _whole_cubes_of_selection(context, deselect_hits=None):
@@ -646,7 +724,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 # ---------------------------------------------------------------- register
 
 CLASSES = (CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
-           CUBEKIT_OT_pick_cube, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
+           CUBEKIT_OT_pick_cube, CUBEKIT_OT_pick_block, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
            CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_OT_set_size,
            CUBEKIT_PT_panel)
 _keys = []
@@ -693,6 +771,7 @@ def register():
         _bind(kc, "Mesh", "cubekit.brush", 'LEFTMOUSE', mode='ADD')
         _bind(kc, "Mesh", "cubekit.brush", 'RIGHTMOUSE', mode='SUB')
         _bind(kc, "Mesh", "cubekit.toggle_whole", 'F')
+        _bind(kc, "Mesh", "cubekit.pick_block", 'L')
         _bind(kc, "Mesh", "cubekit.grow", 'E')
         _bind(kc, "Mesh", "cubekit.shrink", 'Q')
         _bind(kc, "Mesh", "cubekit.view_all", 'R')
