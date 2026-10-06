@@ -21,6 +21,14 @@ HELP = [
         ("Ctrl + wheel", "brush bigger / smaller"),
         ("Alt + A", "un-pick everything"),
         ("F", "whole cubes / sides only"),
+        ("L over a cube", "pick the whole block it belongs to"),
+    ]),
+    ("Copy, cut and paste", 'COPYDOWN', [
+        ("1. L over a side", "picks the block; that side is the glue side"),
+        ("2. Ctrl + C", "copy (or Ctrl + X: cut, takes it away)"),
+        ("3. Ctrl + V over a side", "pastes it there, glue side flat against it"),
+        ("Ctrl + Z", "undo a paste that landed wrong"),
+        ("Glue side", "or point at a picked side while pressing Ctrl + C"),
     ]),
     ("Building", 'MESH_CUBE', [
         ("E", "add a cube on each picked side"),
