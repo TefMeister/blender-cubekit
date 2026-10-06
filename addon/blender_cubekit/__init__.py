@@ -39,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 16, 0),
+    "version": (0, 17, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -324,6 +324,7 @@ class CUBEKIT_OT_copy(bpy.types.Operator):
 picked cube, otherwise the side the last L was pressed on"""
     bl_idname = "cubekit.copy"
     bl_label = "Copy the picked cubes"
+    CUT = False
 
     def invoke(self, context, event):
         import bmesh
@@ -349,12 +350,24 @@ picked cube, otherwise the side the last L was pressed on"""
         bpy.ops.object.mode_set(mode='OBJECT')
         try:
             clip = edit.copy_cubes(ob, ob["cubekit_voxel_m"], picked[name], cell, d)
+            if self.CUT:
+                edit.drop(ob, ob["cubekit_voxel_m"], picked[name])
         finally:
             bpy.ops.object.mode_set(mode='EDIT')
         _clip.clear()
         _clip.update(clip)
-        self.report({'INFO'}, "copied %d cubes; Ctrl + V on a side glues them there" % len(clip["cells"]))
+        self.report({'INFO'}, "%s %d cubes; Ctrl + V on a side glues them there"
+                    % ("cut" if self.CUT else "copied", len(clip["cells"])))
         return {'FINISHED'}
+
+
+class CUBEKIT_OT_cut(CUBEKIT_OT_copy):
+    """Ctrl + X: like Ctrl + C, and the picked cubes are taken away. Ctrl + V puts them back
+wherever you point"""
+    bl_idname = "cubekit.cut"
+    bl_label = "Cut the picked cubes"
+    bl_options = {'REGISTER', 'UNDO'}
+    CUT = True
 
 
 class CUBEKIT_OT_paste(bpy.types.Operator):
@@ -815,7 +828,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 # ---------------------------------------------------------------- register
 
 CLASSES = (CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
-           CUBEKIT_OT_pick_cube, CUBEKIT_OT_pick_block, CUBEKIT_OT_copy, CUBEKIT_OT_paste, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
+           CUBEKIT_OT_pick_cube, CUBEKIT_OT_pick_block, CUBEKIT_OT_copy, CUBEKIT_OT_cut, CUBEKIT_OT_paste, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
            CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_OT_set_size,
            CUBEKIT_PT_panel)
 _keys = []
@@ -864,6 +877,7 @@ def register():
         _bind(kc, "Mesh", "cubekit.toggle_whole", 'F')
         _bind(kc, "Mesh", "cubekit.pick_block", 'L')
         _bind(kc, "Mesh", "cubekit.copy", 'C', ctrl=True)
+        _bind(kc, "Mesh", "cubekit.cut", 'X', ctrl=True)
         _bind(kc, "Mesh", "cubekit.paste", 'V', ctrl=True)
         _bind(kc, "Mesh", "cubekit.grow", 'E')
         _bind(kc, "Mesh", "cubekit.shrink", 'Q')
