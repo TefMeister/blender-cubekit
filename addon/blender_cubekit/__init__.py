@@ -39,7 +39,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 13, 0),
+    "version": (0, 14, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -122,6 +122,11 @@ def _edit_objects(context):
 
 # ---------------------------------------------------------------- buttons
 
+def _hide_inside_changed(self, context):
+    for sp in _view3d_spaces(context):
+        sp.shading.show_backface_culling = self.cubekit_hide_inside
+
+
 class CUBEKIT_OT_colours_on(bpy.types.Operator):
     """Flat, unlit view: what the game shows, nothing more"""
     bl_idname = "cubekit.colours_on"
@@ -134,9 +139,10 @@ class CUBEKIT_OT_colours_on(bpy.types.Operator):
             sp.shading.type = 'SOLID'
             sp.shading.color_type = 'VERTEX' if painted else 'TEXTURE'
             sp.shading.light = 'FLAT'
-            # a model is solid inside but only its skin is drawn; from inside the skin, walls seen
-            # from behind are hidden and cannot be picked (Tefa, 2026-10-03: flying inside was confusing)
-            sp.shading.show_backface_culling = True
+            # a model is solid inside but only its skin is drawn. Hiding the walls seen from behind
+            # (Tefa, 2026-10-03) is now a switch, off by default: Tefa asked for the old see-inside
+            # view back on 2026-10-06 while getting used to it
+            sp.shading.show_backface_culling = context.scene.cubekit_hide_inside
         return {'FINISHED'}
 
 
@@ -442,7 +448,7 @@ class CUBEKIT_OT_tab(bpy.types.Operator):
         bpy.ops.mesh.select_mode(type='FACE')
         bpy.ops.mesh.select_all(action='DESELECT')
         for sp in _view3d_spaces(context):
-            sp.shading.show_backface_culling = True          # see CUBEKIT_OT_colours_on
+            sp.shading.show_backface_culling = context.scene.cubekit_hide_inside   # see CUBEKIT_OT_colours_on
         try:
             bpy.ops.cubekit.hover('INVOKE_DEFAULT')
         except Exception:
@@ -625,6 +631,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(wm, "cubekit_whole", text="whole cubes (F)" if wm.cubekit_whole else "sides only (F)", toggle=True)
         box.prop(wm, "cubekit_brush", text="brush size (Ctrl + wheel)")
+        box.prop(context.scene, "cubekit_hide_inside")
         row = box.row(align=True)
         row.operator("cubekit.split", text="Split finer (C)", icon='MESH_GRID')
         row.operator("cubekit.join", text="Join (Shift C)", icon='MESH_PLANE')
@@ -669,6 +676,9 @@ def register():
     bpy.types.Scene.cubekit_tier = bpy.props.IntProperty(
         name="cube size step", default=0, min=0, max=SIZE_STEPS - 1,
         description="How many times this file's cubes were halved from the project's start size")
+    bpy.types.Scene.cubekit_hide_inside = bpy.props.BoolProperty(
+        name="hide walls seen from inside", default=False, update=_hide_inside_changed,
+        description="On: from inside a model its walls vanish and cannot be picked. Off: you see and can pick them from inside")
     palette.register()
     navigate.register()
     panels.register()
@@ -727,5 +737,6 @@ def unregister():
     panels.unregister()
     palette.unregister()
     del bpy.types.Scene.cubekit_tier
+    del bpy.types.Scene.cubekit_hide_inside
     for c in reversed(CLASSES):
         bpy.utils.unregister_class(c)
