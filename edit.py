@@ -742,3 +742,81 @@ def drop(ob, voxel_m, cells):
         s.remove(c)
     s.write()
     return len(s.cells)
+
+
+# ---- copy and paste a block (Tefa, 2026-10-06) ----
+# A copy remembers one side of one of its cubes: the GLUE side. Pasting onto a side puts the copy
+# just outside that side, turned so its glue side lies flat against it, so where it lands is exact.
+
+def _rotations():
+    """The 24 ways to turn a cube onto itself, as 3 x 3 integer matrices (rows)."""
+    import itertools
+    out = []
+    for perm in itertools.permutations(range(3)):
+        for signs in itertools.product((1, -1), repeat=3):
+            m = [[0, 0, 0] for _ in range(3)]
+            for r in range(3):
+                m[r][perm[r]] = signs[r]
+            det = (m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+                   - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+                   + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]))
+            if det == 1:
+                out.append(m)
+    return out
+
+
+def _apply(m, v):
+    return tuple(m[r][0] * v[0] + m[r][1] * v[1] + m[r][2] * v[2] for r in range(3))
+
+
+def turn_for(glue, onto):
+    """The turn that makes the glue side face back into the side it is pasted onto, turning as
+    little as possible (an upright copy stays upright whenever it can)."""
+    want = tuple(-x for x in onto)
+    best = None
+    for m in _rotations():
+        if _apply(m, glue) == want:
+            score = m[0][0] + m[1][1] + m[2][2]
+            if best is None or score > best[0]:
+                best = (score, m)
+    return best[1]
+
+
+def copy_cubes(ob, voxel_m, cells, glue_cell, glue_dir):
+    """What a paste needs: every picked cube, its sides' colours, and the glue side, all measured
+    from the glue cube."""
+    s = Solid(ob, voxel_m)
+    cells = set(cells) & s.cells
+    gx, gy, gz = glue_cell
+    rel = lambda c: (c[0] - gx, c[1] - gy, c[2] - gz)
+    return dict(
+        v=s.v,
+        glue=tuple(glue_dir),
+        cells={rel(c): s.cell_rgb.get(c) for c in cells},
+        faces={(rel(c), d): rgb for (c, d), rgb in s.faces.items() if c in cells},
+    )
+
+
+def paste_cubes(ob, voxel_m, clip, onto_cell, onto_dir):
+    """Paste a copy onto one side of a cube. Returns how many cubes were placed."""
+    s = Solid(ob, voxel_m)
+    if abs(s.v - clip["v"]) > 1e-9:
+        raise ValueError("the copy is %.3g mm cubes and this part is %.3g mm" % (clip["v"] * 1000, s.v * 1000))
+    m = turn_for(clip["glue"], onto_dir)
+    base = tuple(onto_cell[i] + onto_dir[i] for i in range(3))
+    put = lambda r: tuple(base[i] + x for i, x in enumerate(_apply(m, r)))
+    new = set()
+    for r, rgb in clip["cells"].items():
+        c = put(r)
+        new.add(c)
+        s.cells.add(c)
+        if rgb:
+            s.cell_rgb[c] = rgb
+        for d in DIRS:                              # forget the old sides of a cube pasted over
+            s._forget((c, d))
+    for (r, d), rgb in clip["faces"].items():
+        s.faces[(put(r), _apply(m, d))] = rgb
+    keys = [(c, d) for c in new for d in DIRS
+            if (c[0] + d[0], c[1] + d[1], c[2] + d[2]) not in s.cells]
+    s.write(select=keys)
+    return len(new)
