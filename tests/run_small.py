@@ -15,6 +15,11 @@ RED, BLUE, GREY, YEL = (0.8, 0.1, 0.1), (0.1, 0.2, 0.9), (0.5, 0.5, 0.5), (0.9, 
 fails = []
 
 
+def near(c, want):
+    """Colours read back from the mesh went through float32."""
+    return c is not None and all(abs(a - b) < 1e-3 for a, b in zip(c, want))
+
+
 def check(name, ok, detail=""):
     print("SMALL %-34s %s %s" % (name, "ok" if ok else "FAIL", detail))
     if not ok:
@@ -138,6 +143,23 @@ edit.resize_picked(ob, V, pick(ob, [((0, 0, 1), (0, -1, 0), "sub")]), 0)
 s = state(ob)
 check("join: mostly dug cube disappears", left < 4 and (0, 0, 1) not in s.cells and (0, 0, 1) not in s.fine, left)
 
+# 9a. digging through small cubes into a whole cube picks that cube's side next
+ob4 = fresh("dig")
+edit.resize_picked(ob4, V, pick(ob4, [((2, 1, 1),)]), -1)
+keys = pick(ob4, [((2, 1, 1), (0, 0, 1), "sub")])
+one = [k for k in keys if k[3][0] == small.octant_subs(4)[0]]          # a top half cube
+nxt = edit.shrink(ob4, V, one, count=2)                                 # through it and its lower half
+check("dig through: whole cube below picked", nxt == [((2, 1, 0), (0, 0, 1))], nxt)
+
+# 9a2. painting a side of a half cube colours only the quarters on that side
+ob5 = fresh("paint")
+edit.resize_picked(ob5, V, pick(ob5, [((2, 1, 1),)]), -1)
+keys = pick(ob5, [((2, 1, 1), (0, 0, 1), "sub")])
+edit.paint(ob5, V, keys[:1], BLUE, False)
+s = edit.Solid(ob5, V)
+stained = [k for k, c in s.sfaces.items() if near(c, BLUE)]
+check("paint side: 4 quarters stained, not 8", len(stained) == 4, len(stained))
+
 # 9b. the whole-file size change carries small cubes along, and back
 ob3 = fresh("tiers")
 edit.resize_picked(ob3, V, pick(ob3, [((2, 1, 1),)]), -2)
@@ -149,6 +171,14 @@ s = edit.Solid(ob3, V / 2)
 n_fine_subs = sum(len(fc.subs) for fc in s.fine.values())
 check("finer: quarters became half cubes", len(s.cells) == 11 * 8 and n_fine_subs == (64 - 2) * 8, "%d %d" % (len(s.cells), n_fine_subs))
 check("finer: blue carried", any(BLUE in fc.subs.values() for fc in s.fine.values()))
+ob6 = fresh("halfpaint")
+edit.resize_picked(ob6, V, pick(ob6, [((2, 1, 1),)]), -1)
+keys = pick(ob6, [((2, 1, 1), (0, 0, 1), "sub")])
+edit.paint(ob6, V, keys[:1], YEL, False)
+edit.subdivide(ob6, V)
+s = edit.Solid(ob6, V / 2)
+yel_sides = [k for k, c in s.faces.items() if near(c, YEL)]
+check("finer: a half cube's painted side kept", len(yel_sides) == 1 and not s.fine, "%d %d" % (len(yel_sides), len(s.fine)))
 edit.merge(ob3, V / 2)
 s = edit.Solid(ob3, V)
 check("bigger: joined back to 12 cubes", len(s.cells) == 12 and not s.fine, "%d %d" % (len(s.cells), len(s.fine)))

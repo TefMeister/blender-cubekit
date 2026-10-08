@@ -83,6 +83,8 @@ MERGE_KEEP = 4      # going back to bigger cubes: a big cube stays when at least
 
 
 import edit_small as small  # noqa: E402  smaller cubes inside one model (2026-10-08)
+import importlib as _il_small  # noqa: E402
+small = _il_small.reload(small)   # an add-on update re-runs this file: its helpers must not stay old
 
 
 def _quarter_of(fi):

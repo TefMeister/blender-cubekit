@@ -36,7 +36,12 @@ def _hover_side(context, event):
     _d, ob, bm, idx = best
     f = bm.faces[idx]
     layer = _subsize_layer(bm)
-    return ob, bm, _cell_of(ob, f, f[layer] if layer is not None else 0), _dir_of_face(f)
+    sub = f[layer] if layer is not None else 0
+    _hover_small[0] = sub > 0                        # whether that side belongs to a smaller cube
+    return ob, bm, _cell_of(ob, f, sub), _dir_of_face(f)
+
+
+_hover_small = [False]        # set by the last _hover_side call
 
 
 def _dir_of_face(f):
@@ -186,6 +191,9 @@ turned so its glue side lies flat against it. The pasted cubes come up picked"""
             self.report({'WARNING'}, "point at the side to paste onto")
             return {'CANCELLED'}
         ob, _bm, cell, d = hov
+        if _hover_small[0]:
+            self.report({'WARNING'}, "point at a whole cube's side: pasting onto smaller cubes is not built yet")
+            return {'CANCELLED'}
         _unpick_all(context)                      # only the pasted cubes come up picked
         bpy.ops.object.mode_set(mode='OBJECT')
         try:
