@@ -1,6 +1,6 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.17.0) adds to Blender. The add-on puts three tabs in the 3D
+Everything the CubeKit add-on (version 0.18.0) adds to Blender. The add-on puts three tabs in the 3D
 view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
@@ -8,9 +8,27 @@ Every change can be undone with **Ctrl + Z**.
 
 ## The CubeKit tab, top to bottom
 
-### Cube size, this file only
+### Cube size of the picked cubes
 
-A row of buttons: the project's starting size, half, and quarter (**3.4 mm · 1.7 mm · 0.85 mm** for
+A row of five sizes, smallest on the left (**0.85 · 1.7 · 3.4 · 6.8 · 13.6 mm** for a file at
+3.4 mm). They act on the **picked cubes only**; a picked side counts as its cube. Nothing else in
+the file changes.
+
+- **A smaller size:** each picked cube becomes 8 (or 64) smaller cubes, in the same place and the
+  same colours. Every smaller cube is then picked, painted, grown (E) and dug (Q) on its own, so a
+  screw head or an emblem can sit inside a surface of bigger cubes.
+- **The file's own size:** the smaller cubes of each picked spot join back into one whole cube. A
+  whole cube comes back where at least half of its smaller cubes are (the missing ones are filled
+  in); where fewer are left, that spot goes empty. Colours on its sides are kept as detail.
+- **Bigger sizes** (greyed): not built yet; next on the roadmap, with the preview outline.
+- Sizes below 0.85 mm are not offered. Every smaller cube sits on one fixed grid, so a 1.7 mm cube
+  always covers the same eight 0.85 mm ones and going smaller and back always lands in the same place.
+- Not yet: copy / paste and the arrow-key moves act on whole cubes only; smaller cubes stay where
+  they are. The game export does not read smaller cubes yet.
+
+### Whole file (every cube)
+
+A second row: the project's starting size, half, and quarter (**3.4 mm · 1.7 mm · 0.85 mm** for
 the Ashes 2063 weapons). The lit button is this file's size.
 
 - **A smaller size:** every cube becomes 8 cubes of half the size, in the same place and colours.

@@ -16,6 +16,7 @@ def _carry(s, cells):
 def _put(s, cell, carried):
     rgb, sides = carried
     s.cells.add(cell)
+    s.fine.pop(cell, None)
     if rgb:
         s.cell_rgb[cell] = rgb
     for d, (f, sp, lv) in sides.items():
@@ -54,6 +55,8 @@ def _shift_solid(s, g):
     s.faces = {(m(c), d): v for (c, d), v in s.faces.items()}
     s.split = {(m(c), d): v for (c, d), v in s.split.items()}
     s.level = {(m(c), d): v for (c, d), v in s.level.items()}
+    s.fine = {m(c): v for c, v in s.fine.items()}
+    s.sfaces = {(m(c), i, d): v for (c, i, d), v in s.sfaces.items()}
 
 
 def split_part_plan(ob, voxel_m, keys):
@@ -78,6 +81,8 @@ def keep_only(ob, voxel_m, cells, shift=(0, 0, 0)):
     s = Solid(ob, voxel_m)
     for c in [c for c in s.cells if c not in cells]:
         s.remove(c)
+    for c in [c for c in s.fine if c not in cells]:
+        del s.fine[c]
     if any(shift):
         _shift_solid(s, shift)
     s.write()
@@ -89,6 +94,7 @@ def drop(ob, voxel_m, cells):
     s = Solid(ob, voxel_m)
     for c in cells:
         s.remove(c)
+        s.fine.pop(c, None)
     s.write()
     return len(s.cells)
 
@@ -159,6 +165,7 @@ def paste_cubes(ob, voxel_m, clip, onto_cell, onto_dir):
         c = put(r)
         new.add(c)
         s.cells.add(c)
+        s.fine.pop(c, None)
         if rgb:
             s.cell_rgb[c] = rgb
         for d in DIRS:                              # forget the old sides of a cube pasted over

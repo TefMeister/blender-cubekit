@@ -3,7 +3,16 @@
 What is asked for and not built yet, in the asker's words, with the open questions written down so
 the next session starts ready.
 
-## Mixed cube sizes inside one model (asked 2026-10-03, waiting for a design session)
+## Mixed cube sizes inside one model (asked 2026-10-03; smaller sizes BUILT 2026-10-08, bigger sizes still to do)
+
+**Built 2026-10-08 (add-on 0.18.0):** the size buttons act on the picked cubes only; a picked cube
+can become 8 or 64 smaller cubes (half, quarter: 1.7 and 0.85 mm in a 3.4 mm file), each picked,
+painted, grown and dug on its own; the file's-size button joins them back by the half-or-more
+rule. One fixed grid, as chosen. How it is stored: `edit_small.py` (a cell of smaller cubes keeps
+a 4 x 4 x 4 grid of quarter cubes, and marks which eighths are shown as one half cube).
+**Still to do:** the two bigger sizes (6.8 and 13.6 mm: eight or sixty-four whole cubes shown and
+handled as one), with the preview outline under the mouse; copy / paste and arrow-key moves of
+smaller cubes; the game export reading smaller cubes.
 
 **The ask, Tefa's words:** *"what i would like to have is just selected cubes, and it would have to
 work if only a side is highlighted or the whole cube it doesn't matter, the whole cube still get's

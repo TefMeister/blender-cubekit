@@ -23,6 +23,8 @@
 #   C                        split the picked sides (or cubes' sides) finer: plain -> 4 -> 16 ->
 #                            4 -> 16 ..., colours painted at 16 are kept at 4: cracks, wear, lines
 #   Shift + C                join a split side back into one
+#   size buttons (tab)       the PICKED cubes only: smaller (each cube into 8 or 64 smaller ones,
+#                            same place and colours) or back to the file's size (2026-10-08)
 #   R                        the whole model in view
 #   Ctrl + wheel             brush circle bigger / smaller (the circle follows the mouse)
 #   F5 / F6                  Blender's plain click-select / the edit-mesh menu (the old mouse jobs)
@@ -39,7 +41,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 17, 1),
+    "version": (0, 18, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -396,6 +398,32 @@ fine detail is kept as far as the bigger cube's sides can hold it. Other files a
         return {'FINISHED'}
 
 
+class CUBEKIT_OT_size_picked(bpy.types.Operator):
+    """Cube size of the PICKED cubes only (a picked side counts as its cube). Smaller: each picked
+cube becomes 8 (or 64) smaller cubes in the same place and colours. The file's own size: the
+smaller cubes join back into whole ones; a whole cube comes back where at least half of its smaller
+ones are, otherwise that spot goes empty. Other cubes are not touched"""
+    bl_idname = "cubekit.size_picked"
+    bl_label = "Cube size of the picked cubes"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    rel: bpy.props.IntProperty(min=-2, max=2, description="0 = this file's size, -1 = half, -2 = quarter")
+
+    def execute(self, context):
+        if self.rel > 0:
+            self.report({'WARNING'}, "bigger cubes on picked cubes are not built yet: the next step")
+            return {'CANCELLED'}
+        if context.mode != 'EDIT_MESH':
+            self.report({'WARNING'}, "press Tab and pick the cubes first")
+            return {'CANCELLED'}
+        rel = self.rel
+        n = _for_each_edited(context, lambda edit, ob, V, keys: edit.resize_picked(ob, V, keys, rel))
+        if not n:
+            self.report({'WARNING'}, "nothing picked, or not a cube-edit object (use Every cube on its own)")
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 # ---------------------------------------------------------------- the panel
 
 class CUBEKIT_PT_panel(bpy.types.Panel):
@@ -410,9 +438,17 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         lay = self.layout
         col = lay.column(align=True)
         box = lay.box()
-        box.label(text="cube size, this file only", icon='MESH_CUBE')
+        box.label(text="cube size of the picked cubes", icon='MESH_CUBE')
         try:
-            _path, start, tier, _, _ = _project()
+            _path, start, tier, _, V = _project()
+            import edit_small
+            levels = edit_small.allowed_levels(V)
+            row = box.row(align=True)
+            for rel in (-2, -1, 0, 1, 2):                      # smallest on the left (Tefa, 2026-10-03)
+                cell = row.row(align=True)
+                cell.enabled = rel <= 0 and -rel <= levels
+                cell.operator("cubekit.size_picked", text="%.3g mm" % (V * 1000 * 2 ** rel)).rel = rel
+            box.label(text="whole file (every cube):")
             row = box.row(align=True)
             for t in range(SIZE_STEPS):
                 row.operator("cubekit.set_size", text="%.3g mm" % project.size_mm(start, t),
@@ -446,6 +482,7 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
 CLASSES = (CUBEKIT_OT_colours_on, CUBEKIT_OT_pick_mode, CUBEKIT_OT_save_pick_copy,
            CUBEKIT_OT_pick_cube, CUBEKIT_OT_pick_block, CUBEKIT_OT_copy, CUBEKIT_OT_cut, CUBEKIT_OT_paste, CUBEKIT_OT_brush, CUBEKIT_OT_toggle_whole, CUBEKIT_OT_tab, CUBEKIT_OT_view_all,
            CUBEKIT_OT_grow, CUBEKIT_OT_shrink, CUBEKIT_OT_split, CUBEKIT_OT_join, CUBEKIT_OT_set_size,
+           CUBEKIT_OT_size_picked,
            CUBEKIT_PT_panel)
 _keys = []
 _walk_moved = []          # (keymap item, old key) for the walk mode's Tab, put back on unregister

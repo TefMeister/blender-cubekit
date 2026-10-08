@@ -3,6 +3,7 @@
 import math
 
 from edit import FINE, DIRS, MERGE_KEEP, Solid
+import edit_small as small
 
 def _stack(ob):
     flat = list(ob.get("cubekit_off_stack", []))
@@ -55,8 +56,40 @@ def subdivide(ob, voxel_m):
                 if len(set(fine)) > 1:
                     split[(child, d)] = fine
                     level[(child, d)] = 1
+    fine, sfaces = {}, {}
+    for cell, fc in s.fine.items():
+        for o in range(8):
+            a, b, e = o % 2, (o // 2) % 2, o // 4
+            child = (2 * cell[0] + sh[0] + a, 2 * cell[1] + sh[1] + b, 2 * cell[2] + sh[2] + e)
+            members = [i for i in small.octant_subs(o) if i in fc.subs]
+            if not members:
+                continue
+            if o in fc.half:                                  # a half cube -> a whole cube
+                cells.add(child)
+                cols = [fc.subs[i] for i in members if fc.subs[i]]
+                if cols:
+                    cell_rgb[child] = max(set(cols), key=cols.count)
+                continue
+            nfc = fine.setdefault(child, small.FineCell())
+            for i in members:                                 # a quarter cube -> a half cube
+                x, y, z = small.local(i)
+                no = (x % 2) + 2 * (y % 2) + 4 * (z % 2)
+                octant = small.octant_subs(no)
+                for j in octant:
+                    nfc.subs[j] = fc.subs[i]
+                nfc.half.add(no)
+                for d in DIRS:
+                    c = s.sfaces.get((cell, i, d))
+                    if c is None:
+                        continue
+                    ax = [k for k in range(3) if d[k]][0]
+                    edge = small.local(octant[0])[ax] + (1 if d[ax] > 0 else 0)
+                    for j in octant:
+                        if small.local(j)[ax] == edge:
+                            sfaces[(child, j, d)] = c
     s.v, s.off = v / 2, new_off
     s.cells, s.cell_rgb, s.faces, s.split, s.level = cells, cell_rgb, faces, split, level
+    s.fine, s.sfaces = fine, sfaces
     return s.write()
 
 
@@ -70,6 +103,9 @@ def merge(ob, voxel_m):
     if not stack:
         return 0                                      # never was finer: nothing bigger to go back to
     p_off = stack.pop()
+    for cell in list(s.fine):                 # smaller cubes join back into whole ones first
+        small.join_cell(s, cell)
+    s.sfaces = {}
     # the small grid sits at 2 x the big grid's offset, less a whole number of small cubes: work that
     # whole number out from both offsets, so float noise (0.9999 against 0.0) cannot shift it by one
     sh = [round(2 * p_off[i] - s.off[i]) for i in range(3)]

@@ -56,8 +56,9 @@ the full repo is only needed to build models.
   that bends at its knuckle and is posed frame by frame.
 - **Painting:** in the **CubeKit** tab's **colours** box, click a colour square to paint what is
   picked, or hover a cube and press **1** to **0**. Colours can be added, changed and removed.
-- **Cube size:** buttons at the top of the tab make this file's cubes finer (each cube into 8) or
-  back again.
+- **Cube size:** the buttons at the top of the tab act on the **picked cubes**: a picked cube becomes
+  8 or 64 smaller ones (for screws, emblems, fine detail inside a surface of bigger cubes), and the
+  file's-size button joins them back. A second row changes the whole file.
 - **Moving around is always on**, like a game: **W A S D** move, **Z** down, **X** up, **Shift**
   faster, **middle mouse** held turns your head.
 
@@ -65,7 +66,8 @@ Every button and key, with what Blender's own keys moved to: [docs/HOTKEYS.md](d
 
 ## The rules
 
-1. **One cube size per project.** Set once, made finer only for the whole project at once (1 cube into 8). A hand with bigger cubes than the
+1. **One cube size per project.** Set once; made finer for a whole file (1 cube into 8), or, since
+   0.18.0, for picked cubes only where a detail needs it. A hand with bigger cubes than the
    gun it holds looks like it came from a different game.
 2. **Every number has a name.** Sizes, colours, timings, all in the settings file with a comment.
 3. **No lights.** Materials are pure emission; the preview is the game's picture.
