@@ -13,8 +13,9 @@ version = re.search(r'^version = "([^"]+)"', manifest, re.M).group(1)
 out = os.path.join(ROOT, "dist", "blender_cubekit-%s.zip" % version)
 os.makedirs(os.path.dirname(out), exist_ok=True)
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-    for name in ("blender_manifest.toml", "__init__.py", "navigate.py", "palette.py", "project.py", "panels.py", "moves.py"):
+    for name in ("blender_manifest.toml", "__init__.py", "navigate.py", "palette.py", "project.py", "panels.py", "moves.py",
+                 "clipboard.py", "picking.py"):
         z.write(os.path.join(PKG, name), name)
-    for name in ("bl.py", "edit.py", "atlas.py", "cube_size.py"):
+    for name in ("bl.py", "edit.py", "edit_tiers.py", "edit_moves.py", "atlas.py", "cube_size.py"):
         z.write(os.path.join(ROOT, name), name)
 print("wrote", os.path.relpath(out, ROOT), os.path.getsize(out), "bytes")
