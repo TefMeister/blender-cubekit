@@ -5,14 +5,15 @@
 # octants can be shown as ONE half-size cube instead of 8 quarter ones (the octant is then full).
 # So a 3.4 mm cube can become eight 1.7 mm cubes, and each of those eight 0.85 mm cubes, and back.
 # Everything sits on one fixed grid: a half-size cube always covers the same 8 quarter ones, and a
-# full cube the same 8 half ones (Tefa chose the fixed grid, 2026-10-03).
+# full cube the same 8 half ones (Tefa chose the fixed grid, 2026-10-03). Shipped in add-on 0.18.0;
+# the bigger sizes (whole cubes shown as one) are still to come: docs/ROADMAP.md.
 #
 # Going back to bigger uses the same rule as before (edit.MERGE_KEEP): a bigger cube stays when at
 # least half of its 8 smaller cubes are there, and the missing ones are filled; otherwise it goes.
 #
 # Positions: a "fine" position is a whole number in quarter-cube units, the same units the 4 x 4
 # split sides already use, so fine-square colours on a side map onto the quarter cubes behind it.
-from edit import DIRS, FINE, MERGE_KEEP
+from edit import DIRS, FINE, MERGE_KEEP, UNPAINTED
 
 SUB, SUBSIZE, PART = "cubekit_sub", "cubekit_subsize", "cubekit_part"
 MIN_MM = 0.85                 # no cube smaller than this (the smallest size button)
@@ -168,7 +169,7 @@ def tidy(s):
 def sub_colour(s, cell, index, d):
     fc = s.fine.get(cell)
     return (s.sfaces.get((cell, index, d)) or (fc.subs.get(index) if fc else None)
-            or s.cell_rgb.get(cell) or (0.6, 0.6, 0.6))
+            or s.cell_rgb.get(cell) or UNPAINTED)
 
 
 # ---- reading the mesh back ----
@@ -276,7 +277,7 @@ def _majority(cols, default):
 
 def make_small(s, cell, half):
     """A main cube becomes 64 quarter cubes (or 8 half ones), keeping every colour on its sides."""
-    rgb = s.cell_rgb.get(cell) or (0.6, 0.6, 0.6)
+    rgb = s.cell_rgb.get(cell) or UNPAINTED
     fc = FineCell()
     for i in range(FINE ** 3):
         fc.subs[i] = rgb
@@ -320,7 +321,7 @@ def join_cell(s, cell):
     full = [o for o in range(8) if sum(i in fc.subs for i in octant_subs(o)) >= MERGE_KEEP]
     if len(full) < MERGE_KEEP:
         return False
-    rgb = _majority(list(fc.subs.values()), s.cell_rgb.get(cell) or (0.6, 0.6, 0.6))
+    rgb = _majority(list(fc.subs.values()), s.cell_rgb.get(cell) or UNPAINTED)
     s.add(cell, rgb)
     for d in DIRS:
         ax, ua, va = _axes(d)
