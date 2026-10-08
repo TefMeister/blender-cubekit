@@ -67,8 +67,26 @@ def subdivide(ob, voxel_m):
             if o in fc.half:                                  # a half cube -> a whole cube
                 cells.add(child)
                 cols = [fc.subs[i] for i in members if fc.subs[i]]
-                if cols:
-                    cell_rgb[child] = max(set(cols), key=cols.count)
+                own = max(set(cols), key=cols.count) if cols else None
+                if own:
+                    cell_rgb[child] = own
+                for d in DIRS:
+                    ax, ua, va = small._axes(d)
+                    painted = {i: s.sfaces[(cell, i, d)] for i in small.outer_subs(members[0], 2, d)
+                               if (cell, i, d) in s.sfaces}
+                    if not painted:
+                        continue
+                    fine16 = [own or s.cell_rgb.get(cell) or small.UNPAINTED] * (FINE * FINE)
+                    for i, c in painted.items():
+                        li = small.local(i)
+                        qu, qv = (li[ua] % 2) * 2, (li[va] % 2) * 2
+                        for x in (0, 1):
+                            for y in (0, 1):
+                                fine16[(qu + x) + FINE * (qv + y)] = c
+                    faces[(child, d)] = max(set(fine16), key=fine16.count)
+                    if len(set(fine16)) > 1:
+                        split[(child, d)] = fine16
+                        level[(child, d)] = 1
                 continue
             nfc = fine.setdefault(child, small.FineCell())
             for i in members:                                 # a quarter cube -> a half cube

@@ -67,6 +67,14 @@ def unit_subs(owner, size):
     return octant_subs(octant(owner))
 
 
+def outer_subs(owner, size, d):
+    """The quarter cubes of a small cube that lie on its side facing d."""
+    subs = unit_subs(owner, size)
+    ax = [i for i in range(3) if d[i]][0]
+    edge = local(subs[0])[ax] + (size - 1 if d[ax] > 0 else 0)
+    return [i for i in subs if local(i)[ax] == edge]
+
+
 def is_sub(key):
     return len(key) == 4 and key[2] == KEY_TAG
 
@@ -152,9 +160,9 @@ def save(s):
     s.ob["cubekit_fine_rgb"] = rgb
     hid = []
     for (cell, d), cols in s.hidden.items():
-        hid += list(cell) + list(d)
+        hid += [float(x) for x in cell] + [float(x) for x in d]
         for c in cols:
-            hid += list(c)
+            hid += [float(x) for x in c]
     s.ob["cubekit_hidden"] = hid
 
 
@@ -455,6 +463,8 @@ def shrink(s, keys, count):
         fc = s.fine.get(c)
         if fc and i in fc.subs:
             new.append((c, d, KEY_TAG, owner_of(fc, i)))
+        elif c in s.cells:
+            new.append((c, d))                      # dug through to a whole cube: its side is next
     tidy(s)
     return new
 
@@ -476,5 +486,5 @@ def paint(s, keys, rgb, whole):
                 fc.subs[i] = rgb
                 for dd in DIRS:
                     s.sfaces.pop((cell, i, dd), None)
-            else:
+            elif i in outer_subs(owner, size, d):
                 s.sfaces[(cell, i, d)] = rgb
