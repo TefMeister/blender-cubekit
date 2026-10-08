@@ -30,6 +30,13 @@ HELP = [
         ("Ctrl + Z", "undo a paste that landed wrong"),
         ("Glue side", "or point at a picked side while pressing Ctrl + C"),
     ]),
+    ("Cube sizes (edit mode)", 'MESH_CUBE', [
+        ("Size buttons, top of tab", "act on the PICKED cubes only"),
+        ("A smaller size", "each picked cube becomes 8 (or 64) smaller ones"),
+        ("The file's size", "smaller cubes join back into whole ones"),
+        ("Half-or-more rule", "a whole cube comes back where at least half its smaller ones are"),
+        ("Bigger sizes", "greyed: not built yet"),
+    ]),
     ("Building", 'MESH_CUBE', [
         ("E", "add a cube on each picked side"),
         ("Q", "remove the cube behind each picked side"),

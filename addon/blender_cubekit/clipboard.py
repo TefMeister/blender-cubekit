@@ -35,7 +35,8 @@ def _hover_side(context, event):
         return None
     _d, ob, bm, idx = best
     f = bm.faces[idx]
-    return ob, bm, _cell_of(ob, f), _dir_of_face(f)
+    layer = _subsize_layer(bm)
+    return ob, bm, _cell_of(ob, f, f[layer] if layer is not None else 0), _dir_of_face(f)
 
 
 def _dir_of_face(f):
@@ -46,13 +47,21 @@ def _dir_of_face(f):
     return tuple(d)
 
 
-def _cell_of(ob, f):
+def _subsize_layer(bm):
+    """The face layer saying which sides belong to smaller cubes (None in older files)."""
+    return bm.faces.layers.int.get("cubekit_subsize")
+
+
+def _cell_of(ob, f, sub=0):
+    """The main-grid cell behind this side. sub: 1 or 2 when the side is a smaller cube's (its
+    size in quarter cubes), so the step from the side to the cube's middle is its own half."""
     import math
     v = ob["cubekit_voxel_m"]
     off = list(ob.get("cubekit_off", (0.0, 0.0, 0.0)))
     d = _dir_of_face(f)
     c = f.calc_center_median()
-    return tuple(math.floor((c[i] - 0.5 * v * d[i]) / v - off[i]) for i in range(3))
+    half = 0.5 * v * (sub / 4.0 if sub else 1.0)
+    return tuple(math.floor((c[i] - half * d[i]) / v - off[i]) for i in range(3))
 
 
 def _unpick_all(context):
@@ -83,10 +92,13 @@ picks the whole body (Tefa, 2026-10-06). The side pressed on becomes the glue si
         _glue.clear()
         _glue.update(ob=ob.name, cell=start, dir=d)
         faces_of = {}
+        layer = _subsize_layer(bm)
         for f in bm.faces:
-            faces_of.setdefault(_cell_of(ob, f), []).append(f)
+            faces_of.setdefault(_cell_of(ob, f, f[layer] if layer is not None else 0), []).append(f)
         flat = list(ob.get("cubekit_cells", ()))
         cells = {tuple(flat[i:i + 3]) for i in range(0, len(flat), 3)} if flat else set(faces_of)
+        fine = list(ob.get("cubekit_fine", ()))
+        cells |= {tuple(fine[i:i + 3]) for i in range(0, len(fine), 8)}   # cells of smaller cubes
         cells.add(start)
         block, stack = {start}, [start]
         while stack:
@@ -119,7 +131,8 @@ picked cube, otherwise the side the last L was pressed on"""
         picked = {}
         for ob in _edit_objects(context):
             bm = bmesh.from_edit_mesh(ob.data)
-            cells = {_cell_of(ob, f) for f in bm.faces if f.select}
+            layer = _subsize_layer(bm)
+            cells = {_cell_of(ob, f, f[layer] if layer is not None else 0) for f in bm.faces if f.select}
             if cells:
                 picked[ob.name] = cells
         if not picked:

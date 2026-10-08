@@ -81,6 +81,9 @@ LEVEL, GROUP = "cubekit_level", "cubekit_group"
 MERGE_KEEP = 4      # going back to bigger cubes: a big cube stays when at least 4 of its 8 small ones are there
 
 
+import edit_small as small  # noqa: E402  smaller cubes inside one model (2026-10-08)
+
+
 def _quarter_of(fi):
     """The four fine squares in the same quarter as fine square fi."""
     fu, fv = fi % FINE, fi // FINE
@@ -107,6 +110,7 @@ class Solid:
         self.level = {}            # (cell, dir) -> 1 or 2: how a split side is shown and picked
         self.cell_rgb = {}         # cell -> base rgb, the cube's own colour
         self.cells = set()
+        small.load(self)           # self.fine: cells of smaller cubes; self.sfaces: their sides' colours
         self._read_mesh(me)
         if "cubekit_cells" in ob and len(ob["cubekit_cells"]) >= 3:
             flat = list(ob["cubekit_cells"])
@@ -169,8 +173,14 @@ class Solid:
         base = me.color_attributes.get(BASE)
         px = None if base else _atlas_pixels(self.ob)
         uvl = me.uv_layers.active if px else None
+        sub_attr = me.attributes.get(small.SUB)
         for poly in me.polygons:
             if len(poly.vertices) != 4:
+                continue
+            if sub_attr is not None and sub_attr.data[poly.index].value > 0:
+                col = base.data[poly.loop_indices[0]].color
+                small.read_poly(self, me, poly, _dir_of(poly.normal),
+                                (to_srgb(col[0]), to_srgb(col[1]), to_srgb(col[2])))
                 continue
             cell, d, covered, size, level = self._place(me, poly)
             if base:
@@ -197,10 +207,17 @@ class Solid:
                 self.level[key] = max(1, level)
                 self.faces.setdefault(key, rgb)
             self.cells.add(cell)
-        for key, cols in self.split.items():               # a square that went missing: its side's colour
-            for i in range(FINE * FINE):
-                if cols[i] is None:
-                    cols[i] = self.faces.get(key, (0.6, 0.6, 0.6))
+        for key, cols in list(self.split.items()):         # a square that went missing: its side's colour
+            missing = [i for i in range(FINE * FINE) if cols[i] is None]
+            for i in missing:
+                cols[i] = self.faces.get(key, (0.6, 0.6, 0.6))
+            # a side partly covered by smaller cubes next to it was written square by square; when
+            # the squares are all one colour it is the plain side it always was, not a split one
+            if ((missing or key in self.restored) and self.level.get(key) == 2
+                    and len({tuple(round(x * 255) for x in c) for c in cols}) == 1):   # float32 round trip
+                rgb = cols[0]
+                self._forget(key)
+                self.faces[key] = rgb
 
     def _flood(self):
         """Air = every cell reachable from outside without crossing a face. The rest is solid."""
@@ -242,6 +259,7 @@ class Solid:
     def add(self, cell, rgb):
         self.cells.add(cell)
         self.cell_rgb[cell] = rgb
+        self.fine.pop(cell, None)               # a whole cube replaces any smaller ones there
         for d in DIRS:
             self._forget((cell, d))
 
@@ -322,6 +340,34 @@ class Solid:
         verts, vidx, polys, cols_b, cols_v, keys, levels, groups = [], {}, [], [], [], [], [], []
         off = self.off
         self._group = 0
+        subs, subsizes = [], []
+        self.hidden = {}
+
+        def quad(corners, d, rgb, seed, key, attrs, owner):
+            """One square, corners in fine units; owner says whose corners it shares."""
+            pts = [Vector(((p[0] / FINE + off[0]) * v, (p[1] / FINE + off[1]) * v, (p[2] / FINE + off[2]) * v))
+                   for p in corners]
+            if (pts[1] - pts[0]).cross(pts[2] - pts[0]).dot(Vector(d)) < 0:
+                corners = list(reversed(corners))
+                pts.reverse()
+            ids = []
+            for kk, p in zip(corners, pts):
+                vkey = (owner, kk)
+                if vkey not in vidx:
+                    vidx[vkey] = len(verts)
+                    verts.append(p)
+                ids.append(vidx[vkey])
+            polys.append(ids)
+            k = SHADE[d] * (1.0 + (hash01(*seed, 9) - 0.5) * 2 * NOISE)
+            view = tuple(min(1.0, c * k) for c in rgb)
+            cols_b.append(tuple(to_linear(c) for c in rgb))
+            cols_v.append(tuple(to_linear(c) for c in view))
+            keys.append(key)
+            levels.append(attrs.get(LEVEL, 0))
+            groups.append(attrs.get(GROUP, 0))
+            subs.append(attrs.get(small.SUB, 0))
+            subsizes.append(attrs.get(small.SUBSIZE, 0))
+
         for cell in self.cells:
             for d in DIRS:
                 nb = (cell[0] + d[0], cell[1] + d[1], cell[2] + d[2])
@@ -331,8 +377,14 @@ class Solid:
                 ua, va = [i for i in range(3) if i != ax]
                 planeF = FINE * (cell[ax] + (1 if d[ax] > 0 else 0))     # corners in fine units
                 self.faces.setdefault((cell, d), self.colour_of(cell, d))
-                k = SHADE[d] * (1.0 + (hash01(*cell, 9) - 0.5) * 2 * NOISE)
-                for fu, fv, size, covered, rgb, level, group in self._squares((cell, d)):
+                squares = self._squares((cell, d))
+                if nb in self.fine:
+                    # a side facing smaller cubes: only the squares they leave uncovered are drawn
+                    cols = self.split.get((cell, d)) or [self.colour_of(cell, d)] * (FINE * FINE)
+                    self.hidden[(cell, d)] = list(cols)
+                    squares = [(fi % FINE, fi // FINE, 1, (fi,), cols[fi], 2, 0) for fi in range(FINE * FINE)
+                               if not small.hidden_square(self, cell, d, fi % FINE, fi // FINE)]
+                for fu, fv, size, covered, rgb, level, group in squares:
                     corners = []
                     for du, dv in ((0, 0), (1, 0), (1, 1), (0, 1)):
                         p = [0, 0, 0]
@@ -340,25 +392,9 @@ class Solid:
                         p[ua] = FINE * cell[ua] + fu + du * size
                         p[va] = FINE * cell[va] + fv + dv * size
                         corners.append(tuple(p))
-                    pts = [Vector(((p[0] / FINE + off[0]) * v, (p[1] / FINE + off[1]) * v, (p[2] / FINE + off[2]) * v))
-                           for p in corners]
-                    if (pts[1] - pts[0]).cross(pts[2] - pts[0]).dot(Vector(d)) < 0:
-                        corners.reverse()
-                        pts.reverse()
-                    ids = []
-                    for kk, p in zip(corners, pts):
-                        vkey = (cell, kk)
-                        if vkey not in vidx:
-                            vidx[vkey] = len(verts)
-                            verts.append(p)
-                        ids.append(vidx[vkey])
-                    polys.append(ids)
-                    view = tuple(min(1.0, c * k) for c in rgb)
-                    cols_b.append(tuple(to_linear(c) for c in rgb))
-                    cols_v.append(tuple(to_linear(c) for c in view))
-                    keys.append((cell, d) if level == 0 else (cell, d, covered))
-                    levels.append(level)
-                    groups.append(group)
+                    quad(corners, d, rgb, cell, (cell, d) if level == 0 else (cell, d, covered),
+                         {LEVEL: level, GROUP: group}, cell)
+        small.emit(self, quad)
         old = ob.data
         me = bpy.data.meshes.new(old.name)
         me.from_pydata(verts, [], polys)
@@ -377,12 +413,14 @@ class Solid:
         me.color_attributes.render_color_index = me.color_attributes.find(VIEW)
         me.attributes.new(LEVEL, 'INT', 'FACE').data.foreach_set("value", levels)
         me.attributes.new(GROUP, 'INT', 'FACE').data.foreach_set("value", groups)
+        me.attributes.new(small.SUB, 'INT', 'FACE').data.foreach_set("value", subs)
+        me.attributes.new(small.SUBSIZE, 'INT', 'FACE').data.foreach_set("value", subsizes)
         # Edit mode reads the selection from the corners, so corners, edges and faces are all set:
         # only the given keys (none by default) come up picked. A plain (cell, dir) key picks every
         # square of that side.
         sel = set(select)
         whole = {k[:2] for k in sel if len(k) == 2}
-        fsel = [k in sel or k[:2] in whole for k in keys]
+        fsel = [k in sel or (not small.is_sub(k) and k[:2] in whole) for k in keys]
         me.vertices.foreach_set("select", [False] * len(me.vertices))
         me.edges.foreach_set("select", [False] * len(me.edges))
         me.polygons.foreach_set("select", fsel)
@@ -403,12 +441,16 @@ class Solid:
         ob["cubekit_cell_rgb"] = rgbs
         ob["cubekit_voxel_m"] = self.v
         ob["cubekit_off"] = list(self.off)
+        small.save(self)
         return len(polys)
 
     def key_of(self, poly):
         """(cell, dir) of a plain side, or (cell, dir, fine squares) of a split side's square. A small
         square inside a level-1 quarter stands for its whole quarter."""
         me = self.ob.data
+        sub_attr = me.attributes.get(small.SUB)
+        if sub_attr is not None and sub_attr.data[poly.index].value > 0:
+            return small.key_of(self, me, poly, _dir_of(poly.normal))
         cell, d, covered, size, level = self._place(me, poly)
         if level == 0:
             return (cell, d)
@@ -429,6 +471,15 @@ class Solid:
         return out
 
 
+def resize_picked(ob, voxel_m, keys, rel):
+    """The cube size buttons on the PICKED cubes only (Tefa, 2026-10-03): rel 0 = this file's own
+    size, -1 = half, -2 = quarter. Returns how many cubes changed."""
+    s = Solid(ob, voxel_m)
+    n, pick = small.resize(s, keys, rel)
+    s.write(pick)
+    return n
+
+
 def has_colours(ob):
     return ob.type == 'MESH' and VIEW in ob.data.color_attributes
 
@@ -443,8 +494,8 @@ def grow(ob, voxel_m, keys, count=1, colour=None):
     """E: for every selected face, put count cubes outside it, in the face's colour (or colour); the
     last new cube's outer face becomes the selected one, so E E E builds a row. Returns the new keys."""
     s = Solid(ob, voxel_m)
-    new = []
-    for cell, d in {k[:2] for k in keys}:
+    new = small.grow(s, keys, count, colour)
+    for cell, d in {k[:2] for k in small.plain_keys(keys)}:
         rgb = colour or s.colour_of(cell, d)
         c = cell
         for _ in range(count):
@@ -459,8 +510,8 @@ def shrink(ob, voxel_m, keys, count=1):
     """Q: for every selected face, remove the cube behind it; the next cube inward shows its face in
     the same direction and that becomes the selected one, so Q Q Q digs a row."""
     s = Solid(ob, voxel_m)
-    new = []
-    for cell, d in {k[:2] for k in keys}:
+    new = small.shrink(s, keys, count)
+    for cell, d in {k[:2] for k in small.plain_keys(keys)}:
         rgb = s.colour_of(cell, d)
         c = cell
         for _ in range(count):
@@ -479,7 +530,8 @@ def shrink(ob, voxel_m, keys, count=1):
 def remove_cubes(ob, voxel_m, keys):
     """Q with whole cubes picked: the picked cubes go."""
     s = Solid(ob, voxel_m)
-    for k in keys:
+    small.remove(s, keys)
+    for k in small.plain_keys(keys):
         s.remove(k[0])
     s.write()
 
@@ -488,6 +540,8 @@ def paint(ob, voxel_m, keys, rgb, whole_cubes, select=None):
     """A palette click: the picked sides (or whole cubes) take the colour. select: what stays
     picked afterwards (default: the painted faces)."""
     s = Solid(ob, voxel_m)
+    small.paint(s, keys, rgb, whole_cubes)
+    keys = small.plain_keys(keys)
     if whole_cubes:
         for k in keys:
             s.paint_cube(k[0], rgb)
@@ -503,7 +557,7 @@ def split(ob, voxel_m, keys, whole_cubes):
     detail on the surface, so the one-cube-size rule still holds."""
     s = Solid(ob, voxel_m)
     sides = set()
-    for k in keys:
+    for k in small.plain_keys(keys):
         for d in (s.exposed(k[0]) if whole_cubes else [k[1]]):
             sides.add((k[0], d))
     for cell, d in sides:
@@ -516,7 +570,7 @@ def join(ob, voxel_m, keys, whole_cubes):
     """Shift + C: every picked side (or every side of a picked cube) becomes one square again."""
     s = Solid(ob, voxel_m)
     sides = set()
-    for k in keys:
+    for k in small.plain_keys(keys):
         for d in (s.exposed(k[0]) if whole_cubes else [k[1]]):
             sides.add((k[0], d))
     for cell, d in sides:
