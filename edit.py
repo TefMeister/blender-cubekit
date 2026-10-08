@@ -24,6 +24,7 @@ DIRS = ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
 SHADE = {(0, 0, 1): 1.12, (0, 0, -1): 0.55, (1, 0, 0): 0.88, (-1, 0, 0): 0.88,
          (0, 1, 0): 0.74, (0, -1, 0): 0.74}
 NOISE = 0.05
+UNPAINTED = (0.6, 0.6, 0.6)     # the grey of a cube or side nobody has painted yet (sRGB 0-1)
 BASE, VIEW = "cubekit_base", "cubekit_view"
 # Colours are kept as sRGB 0-1 (what a colour picker shows, and what the atlas holds). Blender's
 # colour attributes are linear, so they are converted on the way in and out.
@@ -196,7 +197,7 @@ class Solid:
                 k = SHADE[d]
                 rgb = tuple(min(1.0, float(pixels[i + j]) / k) for j in range(3))
             else:
-                rgb = (0.6, 0.6, 0.6)
+                rgb = UNPAINTED
             key = (cell, d)
             if size == FINE and level == 0:
                 self.faces[key] = rgb
@@ -210,7 +211,7 @@ class Solid:
         for key, cols in list(self.split.items()):         # a square that went missing: its side's colour
             missing = [i for i in range(FINE * FINE) if cols[i] is None]
             for i in missing:
-                cols[i] = self.faces.get(key, (0.6, 0.6, 0.6))
+                cols[i] = self.faces.get(key, UNPAINTED)
             # a side partly covered by smaller cubes next to it was written square by square; when
             # the squares are all one colour it is the plain side it always was, not a split one
             if ((missing or key in self.restored) and self.level.get(key) == 2
@@ -305,7 +306,7 @@ class Solid:
         return [d for d in DIRS if (cell[0] + d[0], cell[1] + d[1], cell[2] + d[2]) not in self.cells]
 
     def colour_of(self, cell, d):
-        return self.faces.get((cell, d)) or self.cell_rgb.get(cell) or (0.6, 0.6, 0.6)
+        return self.faces.get((cell, d)) or self.cell_rgb.get(cell) or UNPAINTED
 
     # ---- writing ----
     def _squares(self, key):
