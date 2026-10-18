@@ -26,6 +26,7 @@ are not in here.
 | `atlas.py` | Merges neighbouring faces of one colour and writes every colour into one texture. |
 | `bl.py` | The Blender side: objects, the unlit scene, stop-motion keys, rendering, and **pick mode** (every cube on its own). |
 | `edit.py` | Cube editing on an editing copy: add, remove, recolour; works out which cubes are solid inside. |
+| `carve_wear.py` | Carved wear: scratches, chipped edges and pits dug out of the surface with the smallest cubes (0.85 mm), not painted. Seeded, so a rerun gives the same carving. |
 | `pick_mode.py` | Makes a `<model>_pick.blend` copy of any cube model where single cubes can be picked. |
 | `gz_world.py` | Exporter for GZDoom: several cube models into one `.pk3`, the atlas as the skin. |
 | `addon/` | The Blender add-on: the CubeKit sidebar tab and the **L** key. `make_addon_zip.py` builds it. |
