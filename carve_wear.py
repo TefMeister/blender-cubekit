@@ -94,7 +94,8 @@ def snap(x, u):
 def carve_object(ob, rng, bare=None):
     """bare: an sRGB colour (0-1) for the walls and floor of every cut, as if the finish was scraped
     through to the metal under it (Brutal Doom shotgun, 2026-10-18: a black cut on black metal does not
-    show). None keeps them the model's own colour."""
+    show). None keeps them the model's own colour. A function instead of a colour is given each cut face's own
+    colour and returns the one to paint (Brutal Doom gloves: a fraction lighter than what it is cut into)."""
     v = ob.get("cubekit_voxel_m", FILE_MM / 1000.0)
     u = max(1, round(CARVE_MM / (v * 1000.0 / FINE)))
     s = edit.Solid(ob, v)
@@ -242,7 +243,9 @@ def carve_object(ob, rng, bare=None):
                 cell, idx = small.split_fpos(q)
                 fc = s.fine.get(cell)
                 if fc and idx in fc.subs:
-                    s.sfaces[(cell, idx, tuple(-x for x in d))] = tuple(bare)
+                    face = tuple(-x for x in d)
+                    rgb = bare(small.sub_colour(s, cell, idx, face)) if callable(bare) else bare
+                    s.sfaces[(cell, idx, face)] = tuple(rgb)
     f0 = len(ob.data.polygons)
     s.write()
     stats.update(faces_before=f0, faces_after=len(ob.data.polygons), cube_mm=round(v * 1000, 2),
