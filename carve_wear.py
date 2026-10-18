@@ -2,6 +2,8 @@
 # the kit's smallest cubes (0.85 mm) from the surface, not by painting. Uses CubeKit 0.18.0's smaller
 # cubes inside one model.
 #   blender -b <in.blend> --python carve_wear.py -- <out.blend> <render folder> [seed]
+# Or from an open Blender: import carve_wear; carve_wear.carve_object(ob, rng, bare=rgb) on one model
+# already turned into single cubes (densities are the module's names below; set them before calling).
 # Merged models are first cut into single cubes (the kit's "Every cube on its own"). Hands, flashes,
 # casings and shells are left alone. Seeded: the same seed gives the same carving.
 import math
@@ -19,11 +21,6 @@ import bl  # noqa: E402
 import edit  # noqa: E402
 import edit_small as small  # noqa: E402
 from edit import DIRS, FINE  # noqa: E402
-
-argv = sys.argv[sys.argv.index("--") + 1:]
-OUT, RENDERS = argv[0], argv[1]
-SEED = int(argv[2]) if len(argv) > 2 else 2063
-STAGE = argv[3] if len(argv) > 3 else "both"     # both / before / after
 
 # ---- every number has a name ----
 FILE_MM = 3.4                 # the cube size of a model not yet marked with its own
@@ -91,7 +88,10 @@ def snap(x, u):
     return int(math.floor(x / u)) * u
 
 
-def carve_object(ob, rng):
+def carve_object(ob, rng, bare=None):
+    """bare: an sRGB colour (0-1) for the walls and floor of every cut, as if the finish was scraped
+    through to the metal under it (Brutal Doom shotgun, 2026-10-18: a black cut on black metal does not
+    show). None keeps them the model's own colour."""
     v = ob.get("cubekit_voxel_m", FILE_MM / 1000.0)
     u = max(1, round(CARVE_MM / (v * 1000.0 / FINE)))
     s = edit.Solid(ob, v)
@@ -121,9 +121,12 @@ def carve_object(ob, rng):
     softf = [f for f in faces if soft[f[0]]]
     stats = {"scratches": 0, "chips": 0, "pits": 0, "cubes": 0}
 
+    cuts = []
+
     def cut(p):
         if carve(s, p, u):
             stats["cubes"] += 1
+            cuts.append(p)
             return True
         return False
 
@@ -215,6 +218,14 @@ def carve_object(ob, rng):
     for fn, args in jobs:
         fn(*args)
     small.tidy(s)
+    if bare:
+        for p in cuts:
+            for d in DIRS:
+                q = tuple(p[i] + d[i] * u for i in range(3))
+                cell, idx = small.split_fpos(q)
+                fc = s.fine.get(cell)
+                if fc and idx in fc.subs:
+                    s.sfaces[(cell, idx, tuple(-x for x in d))] = tuple(bare)
     f0 = len(ob.data.polygons)
     s.write()
     stats.update(faces_before=f0, faces_after=len(ob.data.polygons), cube_mm=round(v * 1000, 2),
@@ -280,24 +291,35 @@ def render_all(tag):
                 cam.data.ortho_scale = ks
 
 
-# 1. every cube on its own, with its colours on the mesh (what the add-on's button does)
-for ob in bpy.data.objects:
-    if ob.type == 'MESH' and ob.data.polygons and not edit.has_colours(ob):
-        if not bl.pick_mode_check(ob, FILE_MM / 1000.0):
-            bl.split_to_cubes(ob, FILE_MM / 1000.0)
-        edit.convert(ob, FILE_MM / 1000.0)
-setup_view()
-if STAGE in ("both", "before"):
-    render_all("before")
-if STAGE in ("both", "after"):
-    for ob in targets():
-        if len(ob.data.polygons) < MIN_FACES:
-            print("CARVE %-24s left alone (small part)" % ob.name)
-            continue
-        rng = random.Random(SEED + zlib.crc32(ob.name.encode()))
-        st = carve_object(ob, rng)
-        print("CARVE %-24s %s" % (ob.name, st))
-    render_all("after")
-    bpy.context.scene["cubekit_carved"] = "carved wear, seed %d, 2026-10-18" % SEED
-    bpy.ops.wm.save_as_mainfile(filepath=OUT)
-    print("SAVED", OUT)
+def main():
+    argv = sys.argv[sys.argv.index("--") + 1:]
+    out, renders = argv[0], argv[1]
+    seed = int(argv[2]) if len(argv) > 2 else 2063
+    stage = argv[3] if len(argv) > 3 else "both"     # both / before / after
+    global RENDERS
+    RENDERS = renders
+    # 1. every cube on its own, with its colours on the mesh (what the add-on's button does)
+    for ob in bpy.data.objects:
+        if ob.type == 'MESH' and ob.data.polygons and not edit.has_colours(ob):
+            if not bl.pick_mode_check(ob, FILE_MM / 1000.0):
+                bl.split_to_cubes(ob, FILE_MM / 1000.0)
+            edit.convert(ob, FILE_MM / 1000.0)
+    setup_view()
+    if stage in ("both", "before"):
+        render_all("before")
+    if stage in ("both", "after"):
+        for ob in targets():
+            if len(ob.data.polygons) < MIN_FACES:
+                print("CARVE %-24s left alone (small part)" % ob.name)
+                continue
+            rng = random.Random(seed + zlib.crc32(ob.name.encode()))
+            st = carve_object(ob, rng)
+            print("CARVE %-24s %s" % (ob.name, st))
+        render_all("after")
+        bpy.context.scene["cubekit_carved"] = "carved wear, seed %d, 2026-10-18" % seed
+        bpy.ops.wm.save_as_mainfile(filepath=out)
+        print("SAVED", out)
+
+
+if __name__ == "__main__":
+    main()
