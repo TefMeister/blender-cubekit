@@ -31,6 +31,9 @@ SCRATCH_MM = (2.5, 13.0)      # scratch length range
 ALONG_SHARE = 0.65            # share of scratches running along the gun
 ALONG_SPREAD_DEG = 15         # how far those may lean off the gun's length
 GOUGE_SHARE = 0.18            # share of scratches cut two cubes deep in their middle third
+ZIGZAG_SHARE = 0              # share of scratches shaped like a lightning strike (Brutal Doom shotgun, 2026-10-18)
+ZIGZAG_SEG = (3, 7)           # a lightning scratch runs this many small cubes before it kinks
+ZIGZAG_TURN_DEG = (25, 55)    # and kinks this far off its heading, to alternate sides
 CHIP_PER_CM = 0.35            # chipped stretches per cm of outside edge
 SOFT_CHIP_PER_CM = 0.55       # wood and paint chip more
 CHIP_RUN = (1, 5)             # a chipped stretch, in small cubes along the edge
@@ -144,11 +147,25 @@ def carve_object(ob, rng, bare=None):
             ang = rng.uniform(0, math.pi)
         n = max(2, int(rng.uniform(*SCRATCH_MM) / CARVE_MM))
         gouge = rng.random() < GOUGE_SHARE
+        zig = ZIGZAG_SHARE > 0 and rng.random() < ZIGZAG_SHARE
+        heading, side, seg_left = ang, 1, n
+        if zig:
+            ang = heading + math.radians(rng.uniform(*ZIGZAG_TURN_DEG))
+            seg_left = rng.randint(*ZIGZAG_SEG)
+        s0, j = list(p0), 0                  # where the current straight stretch starts, steps along it
         last, made = None, 0
         for k in range(n):
+            if zig and seg_left == 0:        # kink: the next stretch leans the other way off the heading
+                s0[ua] += j * u * math.cos(ang)
+                s0[va] += j * u * math.sin(ang)
+                side, j = -side, 0
+                ang = heading + side * math.radians(rng.uniform(*ZIGZAG_TURN_DEG))
+                seg_left = rng.randint(*ZIGZAG_SEG)
             q = list(p0)
-            q[ua] = snap(p0[ua] + k * u * math.cos(ang), u)
-            q[va] = snap(p0[va] + k * u * math.sin(ang), u)
+            q[ua] = snap(s0[ua] + j * u * math.cos(ang), u)
+            q[va] = snap(s0[va] + j * u * math.sin(ang), u)
+            j += 1
+            seg_left -= 1
             q = tuple(q)
             if q == last:
                 continue
