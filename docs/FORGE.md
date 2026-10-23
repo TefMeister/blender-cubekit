@@ -39,3 +39,10 @@ The weapon designs live in their game's repo: `ashes-2063-weapons/forge/` and `b
 
 - The game exporters (`gz_world.py`, the kit's `gz_export`) do not read forge models yet.
 - Hands are not on the forge guns yet.
+
+## Every piece its own part
+
+Give every visible piece its own name with `m.part = '<name>'` before the lines that build it: grip, barrel,
+stock, `mag`, pump or fore-end, sight or scope, guard, hammer, bolt and so on. Each part becomes its own object in
+Blender, so it can be picked on its own. Nothing is left as one big body (Tefa, 2026-10-23). Name magazines `mag`:
+the glove and hand fitting leave them free.
