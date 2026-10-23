@@ -26,6 +26,9 @@
 #   size buttons (tab)       the PICKED cubes only: smaller (each cube into 8 or 64 smaller ones,
 #                            same place and colours) or back to the file's size (2026-10-08)
 #   R                        the whole model in view
+#   B                        the build brush on / off (build_brush.py, 2026-10-23): while on, the left
+#                            mouse swept over the model adds one cube on top of the surface and the
+#                            right mouse carves one out, one layer per press
 #   Ctrl + wheel             brush circle bigger / smaller (the circle follows the mouse)
 #   F5 / F6                  Blender's plain click-select / the edit-mesh menu (the old mouse jobs)
 # Movement, always on, every mode (navigate.py): W A S D move, Z down, X up, Shift faster, middle
@@ -41,7 +44,7 @@ import bpy
 bl_info = {   # read by Blender versions before 4.2; the manifest file is what 4.2+ reads
     "name": "CubeKit",
     "author": "TefMeister",
-    "version": (0, 18, 0),
+    "version": (0, 19, 0),
     "blender": (4, 2, 0),
     "location": "3D View > Sidebar > CubeKit",
     "category": "Mesh",
@@ -224,6 +227,8 @@ from . import clipboard  # noqa: E402  L, Ctrl + C / X / V (split out 2026-10-08
 from . import picking    # noqa: E402  the brush and F (split out 2026-10-08)
 clipboard = _il.reload(clipboard)
 picking = _il.reload(picking)
+from . import build_brush   # noqa: E402  B: the build brush (2026-10-23)
+build_brush = _il.reload(build_brush)
 from .clipboard import (_clip, _glue, _hover_side, _dir_of_face, _cell_of, _unpick_all,  # noqa: E402,F401
                         CUBEKIT_OT_pick_block, CUBEKIT_OT_copy, CUBEKIT_OT_cut, CUBEKIT_OT_paste)
 from .picking import (_whole_cubes_of_selection, _expand_groups, _shrink_groups,  # noqa: E402,F401
@@ -465,6 +470,8 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(wm, "cubekit_whole", text="whole cubes (F)" if wm.cubekit_whole else "sides only (F)", toggle=True)
         box.prop(wm, "cubekit_brush", text="brush size (Ctrl + wheel)")
+        box.prop(wm, "cubekit_build", toggle=True, icon='MOD_BUILD',
+                 text="BUILD BRUSH ON (B): left adds, right carves" if wm.cubekit_build else "build brush (B)")
         box.prop(context.scene, "cubekit_hide_inside")
         row = box.row(align=True)
         row.operator("cubekit.split", text="Split finer (C)", icon='MESH_GRID')
@@ -515,6 +522,7 @@ def register():
         name="hide walls seen from inside", default=False, update=_hide_inside_changed,
         description="On: from inside a model its walls vanish and cannot be picked. Off: you see and can pick them from inside")
     palette.register()
+    build_brush.register()
     navigate.register()
     panels.register()
     moves.register()
@@ -523,6 +531,7 @@ def register():
         navigate.bind(kc, _keys)
         palette.bind(kc, _keys)
         moves.bind(kc, _keys)
+        build_brush.bind(kc, _keys)              # before the picking brush: it takes the mouse while on
         _bind(kc, "Object Mode", "cubekit.tab", 'TAB')
         _bind(kc, "Mesh", "cubekit.tab", 'TAB')
         _bind(kc, "Mesh", "cubekit.brush", 'LEFTMOUSE', mode='ADD')
@@ -573,6 +582,7 @@ def unregister():
     del bpy.types.WindowManager.cubekit_whole
     del bpy.types.WindowManager.cubekit_brush
     moves.unregister()
+    build_brush.unregister()
     panels.unregister()
     palette.unregister()
     del bpy.types.Scene.cubekit_tier

@@ -117,6 +117,10 @@ to pick more; the wheel while holding changes the brush size. Right mouse: the s
 
     mode: bpy.props.EnumProperty(items=[('ADD', "pick", ""), ('SUB', "un-pick", "")], default='ADD')
 
+    @classmethod
+    def poll(cls, context):
+        return not context.window_manager.cubekit_build      # while the build brush is on, the mouse builds
+
     def _apply(self, context):
         wm = context.window_manager
         r = wm.cubekit_brush

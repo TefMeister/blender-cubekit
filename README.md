@@ -51,7 +51,8 @@ the full repo is only needed to build models.
 - **In edit mode:** the **left mouse** is a picking brush, **Ctrl + wheel** sizes it, the **right
   mouse** held un-picks, **F** switches between whole cubes and single sides, **E** adds a cube,
   **Q** digs one out, **C** splits a side into 4 and then 16 squares for cracks, wear and fine lines,
-  **Shift + C** joins it back, **R** puts the whole model in view. The **CubeKit Build** tab adds or
+  **Shift + C** joins it back, **R** puts the whole model in view, **B** switches the build brush
+  on and off (left mouse swept over the model adds one layer of cubes on top, right mouse carves one out). The **CubeKit Build** tab adds or
   removes a typed number of cubes, in the side's colour or a chosen one.
   **Alt + arrows** move picked cubes; **Make a moving part** turns picked cubes (a finger) into a part
   that bends at its knuckle and is posed frame by frame.
