@@ -28,6 +28,7 @@ are not in here.
 | `edit.py` | Cube editing on an editing copy: add, remove, recolour; works out which cubes are solid inside. |
 | `carve_wear.py` | Carved wear: scratches, chipped edges and pits dug out of the surface with the smallest cubes (0.85 mm), not painted. Seeded, so a rerun gives the same carving. |
 | `pick_mode.py` | Makes a `<model>_pick.blend` copy of any cube model where single cubes can be picked. |
+| `forge_rebuild.py` | Builds a forge model's own objects again inside an existing `.blend` (hands, gloves and anything else in the file stay as they are), with a check picture of its pieces. |
 | `gz_world.py` | Exporter for GZDoom: several cube models into one `.pk3`, the atlas as the skin. |
 | `addon/` | The Blender add-on: the CubeKit sidebar tab and the **L** key. `make_addon_zip.py` builds it. |
 | `dist/` | The add-on zip, ready to install. |
