@@ -1,6 +1,6 @@
 # Buttons and keys
 
-Everything the CubeKit add-on (version 0.19.0) adds to Blender. The add-on puts three tabs in the 3D
+Everything the CubeKit add-on (version 0.20.0) adds to Blender. The add-on puts three tabs in the 3D
 view's side panel, **CubeKit**, **CubeKit Build** and **CubeKit Move**: with the mouse over the 3D view, press **N** if
 the panel is hidden, then click a tab on the panel's right edge.
 
@@ -53,7 +53,7 @@ the Ashes 2063 weapons). The lit button is this file's size.
 | --- | --- |
 | **whole cubes (F) / sides only (F)** | What a pick grabs and what a colour paints. The **F** key switches it. |
 | **brush size (Ctrl + wheel)** | How big the picking brush circle is, in pixels. |
-| **build brush (B)** | Switches the build brush on and off (the **B** key does too). While it is on the button is lit and the mouse builds instead of picking: see **B** in the edit-mode keys. |
+| **build brush (B)** | Switches the build brush on and off (the **B** key does too). While it is on the button is lit, the mouse builds instead of picking, and the colour choice for adding and carving shows under it: see **B** in the edit-mode keys. |
 | **Split finer (C)** | The **C** key: see the edit-mode keys below. |
 | **Join (Shift C)** | The **Shift + C** key: see below. |
 
@@ -90,8 +90,11 @@ For adding or removing more than one cube at a time, by number.
 
 1. **Tab**, set **F** to sides, and pick one or more sides.
 2. Type **how many cubes**.
-3. Choose the **colour of added cubes**: **Same as the side**, or **Chosen colour** (pick it in the
-   colour box, or press **Take the palette's colour** to use the big square from the CubeKit tab).
+3. Choose the **colour when adding or carving**: **Same as the side** (new cubes take the colour of the
+   side they go on, and the cube a carve uncovers takes the carved cube's colour, so a colour pattern
+   carries on), or **Chosen colour** (both take the colour you pick in the colour box, or press **Take the
+   palette's colour** to use the big square from the CubeKit tab). The build brush (**B**) follows the same
+   choice.
 4. Press **Add on top** (that many cubes stacked outwards on every picked side) or **Remove inwards**
    (that many dug inwards). With whole cubes picked, Remove takes the picked cubes away.
    Remove stops at the first gap: typing a big number clears a row and nothing past the gap.
@@ -143,7 +146,7 @@ up-down).
 | **Shift + C** | Joins a split side back into one square, in its most common colour. |
 | **1 to 0** (mouse over a cube) | Paints with that key's colour (see the colours section above). |
 | **R** | The whole model in view, at a sensible distance. |
-| **B** | The **build brush**, on or off. While it is on, the **left mouse** held and swept over the model adds **one cube on top of** every surface square it passes over, and the **right mouse** carves **one cube out** from under every square. One layer per press: cubes added (or holes carved) by the same press are never built on (or dug into) again, so let go and press again for the next layer. See-through boxes (green to add, red to carve) show what will happen while the button is held; it happens when you let go, as one **Ctrl + Z** step. New cubes take the colour of the side they sit on. **Esc** while holding cancels the stroke. Press **B** again for the picking brush back. |
+| **B** | The **build brush**, on or off. While it is on, the **left mouse** held and swept over the model adds **one cube on top of** every surface square it passes over, and the **right mouse** carves **one cube out** from under every square. One layer per press: cubes added (or holes carved) by the same press are never built on (or dug into) again, so let go and press again for the next layer. See-through boxes (green to add, red to carve) show what will happen while the button is held; it happens when you let go, as one **Ctrl + Z** step. Colours follow the **colour when adding or carving** choice, shown under the build brush button while it is on (and in the CubeKit Build tab): **Same as the side** gives new cubes the colour of the side they sit on and paints the cube a carve uncovers in the carved cube's colour, so the pattern is not broken; **Chosen colour** paints both in one colour you pick. **Esc** while holding cancels the stroke. Press **B** again for the picking brush back. |
 | **F5** | Blender's plain click-select (what the left mouse did before). |
 | **F6** | The edit-mesh menu (what the right mouse did before). |
 | **Space** | Blender's own: play and stop the animation. |

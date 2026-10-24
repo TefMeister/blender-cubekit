@@ -472,6 +472,13 @@ class CUBEKIT_PT_panel(bpy.types.Panel):
         box.prop(wm, "cubekit_brush", text="brush size (Ctrl + wheel)")
         box.prop(wm, "cubekit_build", toggle=True, icon='MOD_BUILD',
                  text="BUILD BRUSH ON (B): left adds, right carves" if wm.cubekit_build else "build brush (B)")
+        if wm.cubekit_build:                              # its colour choice, shared with the Build tab
+            sc = context.scene
+            box.prop(sc, "cubekit_build_colour", expand=True)
+            if sc.cubekit_build_colour == 'CHOSEN':
+                row = box.row(align=True)
+                row.prop(sc, "cubekit_add_rgb", text="")
+                row.operator("cubekit.build_colour_from_palette", text="", icon='EYEDROPPER')
         box.prop(context.scene, "cubekit_hide_inside")
         row = box.row(align=True)
         row.operator("cubekit.split", text="Split finer (C)", icon='MESH_GRID')

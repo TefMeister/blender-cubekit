@@ -118,7 +118,8 @@ class CUBEKIT_OT_build(bpy.types.Operator):
             if wm.cubekit_whole:
                 fn = lambda edit, ob, V, keys: edit.remove_cubes(ob, V, keys)
             else:
-                fn = lambda edit, ob, V, keys: edit.shrink(ob, V, keys, n)
+                rgb = None if scene.cubekit_build_colour == 'SIDE' else tuple(scene.cubekit_add_rgb)
+                fn = lambda edit, ob, V, keys: edit.shrink(ob, V, keys, n, rgb, match=True)
         else:
             if wm.cubekit_whole:
                 self.report({'WARNING'}, "pick a SIDE (F switches to sides), so I know which way to build")
@@ -134,7 +135,7 @@ class CUBEKIT_OT_build(bpy.types.Operator):
 
 
 class CUBEKIT_OT_build_colour_from_palette(bpy.types.Operator):
-    """Use the palette's colour in hand (the big square in the CubeKit tab) for new cubes"""
+    """Use the palette's colour in hand (the big square in the CubeKit tab) for added and uncovered cubes"""
     bl_idname = "cubekit.build_colour_from_palette"
     bl_label = "Take the palette's colour"
 
@@ -224,7 +225,8 @@ class CUBEKIT_PT_build(bpy.types.Panel):
         if context.window_manager.cubekit_measure:
             box.label(text=context.window_manager.cubekit_measure)
         box = lay.box()
-        box.label(text="colour of added cubes", icon='COLOR')
+        box.label(text="colour when adding or carving", icon='COLOR')
+        box.label(text="(these buttons and the build brush, B)")
         box.prop(scene, "cubekit_build_colour", expand=True)
         if scene.cubekit_build_colour == 'CHOSEN':
             row = box.row(align=True)
@@ -243,9 +245,12 @@ def register():
         name="how many cubes", default=1, min=1, max=COUNT_MAX,
         description="How many cubes Add on top or Remove inwards builds on each picked side")
     bpy.types.Scene.cubekit_build_colour = bpy.props.EnumProperty(
-        name="colour of added cubes",
-        items=[('SIDE', "Same as the side", "New cubes take the picked side's colour"),
-               ('CHOSEN', "Chosen colour", "New cubes take the colour chosen below")],
+        name="colour when adding or carving",
+        items=[('SIDE', "Same as the side",
+                "New cubes take the colour of the side they go on; carving paints the cube it uncovers in the "
+                "carved cube's colour, so the colour pattern carries on"),
+               ('CHOSEN', "Chosen colour",
+                "New cubes, and the cube a carve uncovers, take the colour chosen below")],
         default='SIDE')
     bpy.types.WindowManager.cubekit_measure = bpy.props.StringProperty(default="")
     bpy.types.Scene.cubekit_add_rgb = bpy.props.FloatVectorProperty(

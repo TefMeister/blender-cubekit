@@ -153,6 +153,11 @@ class CUBEKIT_OT_build_stroke(bpy.types.Operator):
 
     def _apply(self, context):
         _, edit, V = _kit()
+        # The Build tab's colour choice (Tefa, 2026-10-24): "Same as the side" = new cubes take the colour
+        # of the side they sit on, and a carve paints the cube it uncovers in the carved cube's colour, so
+        # the pattern is not broken; "Chosen colour" = both take the colour chosen there.
+        scene = context.scene
+        colour = None if scene.cubekit_build_colour == 'SIDE' else tuple(scene.cubekit_add_rgb)
         done = 0
         for name in self._names:
             idx = self._hits[name]
@@ -171,7 +176,10 @@ class CUBEKIT_OT_build_stroke(bpy.types.Operator):
                     keys.append(key)
             if not keys:
                 continue
-            (edit.shrink if self.carve else edit.grow)(ob, V, keys)
+            if self.carve:
+                edit.shrink(ob, V, keys, 1, colour, match=True)
+            else:
+                edit.grow(ob, V, keys, 1, colour)
             done += len(keys)
         return done
 

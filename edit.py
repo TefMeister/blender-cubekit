@@ -509,13 +509,17 @@ def grow(ob, voxel_m, keys, count=1, colour=None):
     return new
 
 
-def shrink(ob, voxel_m, keys, count=1):
+def shrink(ob, voxel_m, keys, count=1, colour=None, match=False):
     """Q: for every selected face, remove the cube behind it; the next cube inward shows its face in
-    the same direction and that becomes the selected one, so Q Q Q digs a row."""
+    the same direction and that becomes the selected one, so Q Q Q digs a row.
+    The cube the dig uncovers keeps its own colour, unless colour is given (it takes that) or match is
+    on (it takes the colour of the side that was dug away, so a subtle colour pattern carries on;
+    Tefa, 2026-10-24)."""
     s = Solid(ob, voxel_m)
-    new = small.shrink(s, keys, count)
+    new = small.shrink(s, keys, count, colour, match)
     for cell, d in {k[:2] for k in small.plain_keys(keys)}:
         rgb = s.colour_of(cell, d)
+        uncovered = colour or (rgb if match else None)
         c = cell
         for _ in range(count):
             if c not in s.cells:
@@ -526,6 +530,8 @@ def shrink(ob, voxel_m, keys, count=1):
                 s.cell_rgb[c] = rgb
         if c in s.cells:
             new.append((c, d))
+            if uncovered:
+                s.paint_cube(c, uncovered)
     s.write(new)
     return new
 

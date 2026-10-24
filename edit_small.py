@@ -446,10 +446,13 @@ def grow(s, keys, count, colour):
     return new
 
 
-def shrink(s, keys, count):
-    """Q on small cubes' sides: the small cube goes; the one behind it is picked next."""
+def shrink(s, keys, count, colour=None, match=False):
+    """Q on small cubes' sides: the small cube goes; the one behind it is picked next. colour / match:
+    what the uncovered cube is painted, as edit.shrink."""
     new = []
     for cell, d, _t, (owner, size) in sub_keys(keys):
+        side = sorted(outer_subs(owner, size, d))      # the carved side's own colour, as painted on its face
+        uncovered = colour or (sub_colour(s, cell, side[0] if side else owner, d) if match else None)
         o = fpos(cell, owner)
         c, i = cell, owner
         for _ in range(count):
@@ -462,9 +465,14 @@ def shrink(s, keys, count):
             c, i = split_fpos(o)
         fc = s.fine.get(c)
         if fc and i in fc.subs:
-            new.append((c, d, KEY_TAG, owner_of(fc, i)))
+            key = (c, d, KEY_TAG, owner_of(fc, i))
+            new.append(key)
+            if uncovered:
+                paint(s, [key], uncovered, True)
         elif c in s.cells:
             new.append((c, d))                      # dug through to a whole cube: its side is next
+            if uncovered:
+                s.paint_cube(c, uncovered)
     tidy(s)
     return new
 
