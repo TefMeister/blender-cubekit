@@ -38,7 +38,7 @@ are not in here.
 
 ## Install the add-on
 
-1. Download `dist/blender_cubekit-<version>.zip` (do not unzip it).
+1. Download `blender_cubekit-<version>.zip` from [Releases](https://github.com/TefMeister/blender-cubekit/releases) (or from `dist/`; do not unzip it).
 2. In Blender: **Edit > Preferences > Add-ons**, open the small arrow menu at the top right, choose
    **Install from Disk...**, pick the zip.
 3. In the 3D view press **N**: there is now a **CubeKit** tab.
