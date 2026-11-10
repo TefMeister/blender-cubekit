@@ -15,6 +15,7 @@
 import math
 
 FINE = 4                        # quarter cells per main cube along each axis
+LINE_STEPS_PER_CELL = 2         # a drawn line is walked in half-quarter-cell steps, so no cell is skipped (_line_q)
 SIZES = (1.0, 0.5, 0.25)
 
 SHADE = {(0, 0, 1): 1.12, (0, 0, -1): 0.55, (0, 1, 0): 0.88, (0, -1, 0): 0.88, (1, 0, 0): 0.74, (-1, 0, 0): 0.74}
@@ -342,7 +343,11 @@ class Model:
         """Quarter-cube steps along a polyline given in main units [(a, b), ...]."""
         out = []
         for (a0, b0), (a1, b1) in zip(pts, pts[1:]):
-            n = max(1, int(max(abs(a1 - a0), abs(b1 - b0)) * FINE))
+            # Half a quarter cell per step at most (2026-11-10). One step per quarter cell, cut down with int(), lost a
+            # whole step whenever the length was a hair under a round number (0.7 - 0.2 = 0.49999999999999994), and the
+            # walk then jumped two cells: every groove, crack, scratch and raised line came out dotted. A cell reached
+            # twice is kept once (the check below). Test: tests/run_lines.py.
+            n = max(1, math.ceil(max(abs(a1 - a0), abs(b1 - b0)) * FINE * LINE_STEPS_PER_CELL))
             for s in range(n + 1):
                 t = s / n
                 q = (math.floor((a0 + (a1 - a0) * t) * FINE), math.floor((b0 + (b1 - b0) * t) * FINE))
